@@ -269,6 +269,9 @@ aiohomeconnect==0.12.3
 # homeassistant.components.homekit_controller
 aiohomekit==3.2.7
 
+# homeassistant.components.a_tfa_me_1
+aiohttp==3.11.12
+
 # homeassistant.components.mcp_server
 aiohttp_sse==2.2.0
 

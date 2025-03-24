@@ -1,0 +1,5 @@
+{
+  "domain": "tfa_dostmann",
+  "name": "TFA",
+  "integrations": ["a_tfa_me_1", "a_tfa_me_1"]
+}

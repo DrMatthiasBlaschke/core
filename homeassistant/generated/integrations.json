@@ -6407,6 +6407,17 @@
       "config_flow": true,
       "iot_class": "cloud_polling"
     },
+    "tfa": {
+      "name": "TFA",
+      "integrations": {
+        "a_tfa_me_1": {
+          "integration_type": "hub",
+          "config_flow": true,
+          "iot_class": "local_polling",
+          "name": "TFA.me station"
+        }
+      }
+    },
     "tfiac": {
       "name": "Tfiac",
       "integration_type": "hub",
