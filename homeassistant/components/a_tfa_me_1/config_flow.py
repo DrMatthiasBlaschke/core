@@ -68,7 +68,8 @@ class TFAmeConfigFlow(ConfigFlow, domain=DOMAIN):
         multi_ent = user_input.get(CONF_MULTIPLE_ENTITIES)
         if not isinstance(multi_ent, bool):
             self.multiple_entities = False
-        self.multiple_entities = True
+        else:
+            self.multiple_entities = multi_ent
 
         # Get interval and IP or mDNS host name
         update_interval = user_input.get(CONF_INTERVAL)
@@ -87,11 +88,11 @@ class TFAmeConfigFlow(ConfigFlow, domain=DOMAIN):
             )
 
         # if user_input is not None:
-        if is_valid_ip_or_mdns(user_input):
+        if is_valid_ip_or_tfa_me(user_input):
             # host_str = user_input.get("ip_address")  # Get value as string
             title_str: str = "TFA.me Station"
             if isinstance(ip_host_str, str):
-                title_str = "TFA.me Station '" + ip_host_str + "'"
+                title_str = "TFA.me Station '" + ip_host_str.upper() + "'"
 
             try:
                 # device_list = self._load_device_list()
@@ -129,8 +130,8 @@ class TFAmeConfigFlow(ConfigFlow, domain=DOMAIN):
         return OptionsFlowHandler()
 
 
-# ---- Verify if user input is valid IP V4 or mDNS name ----
-def is_valid_ip_or_mdns(to_verify: dict) -> bool:
+# ---- Verify if user input is valid IP V4 or valid TFA.me station ----
+def is_valid_ip_or_tfa_me(to_verify: dict) -> bool:
     """Verify if input is an IP or a valid mDNS host name."""
 
     host = to_verify.get("ip_address")  # Get value as string
@@ -147,7 +148,9 @@ def is_valid_ip_or_mdns(to_verify: dict) -> bool:
         return True
 
     # Special format for mDNS name verification: "tfa-me-XXX-XXX-XXX.local"
-    mdns_pattern: str = r"^tfa-me-[0-9A-Fa-f]{3}-[0-9A-Fa-f]{3}-[0-9A-Fa-f]{3}\.local$"
+    # mdns_pattern: str = r"^tfa-me-[0-9A-Fa-f]{3}-[0-9A-Fa-f]{3}-[0-9A-Fa-f]{3}\.local$"
+    # Special format for mDNS name verification: "XXX-XXX-XXX"
+    mdns_pattern: str = r"^[0-9A-Fa-f]{3}-[0-9A-Fa-f]{3}-[0-9A-Fa-f]{3}$"
     if re.match(mdns_pattern, host):
         return True
 

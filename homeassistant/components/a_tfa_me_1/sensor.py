@@ -309,14 +309,21 @@ class TFAmeSensorEntity(SensorEntity):
                             measurement_value = float(newest[0]) - float(oldest[0])
                             measurement_value = round(measurement_value, 1)
                     except Exception as error:
-                        msg: str = "Exception requesting data: " + str(error.__doc__)
+                        msg: str = (
+                            "Exception requesting data: str_rain = '"
+                            + str_rain
+                            + "' "
+                            + str(error.__doc__)
+                        )
                         _LOGGER.error(msg)
                         measurement_value = float(0)
                         measurement_value = round(measurement_value, 1)
                         raise
 
             else:
-                measurement_value = STATE_UNAVAILABLE
+                measurement_value = (
+                    None  # TO.DO insert again or use other value STATE_UNAVAILABLE
+                )
 
         except (ValueError, TypeError, KeyError):
             return None  # Wrong data, Home Assistant shows sensor as "unavailable"
@@ -360,14 +367,17 @@ class TFAmeSensorEntity(SensorEntity):
     @property
     def icon(self) -> str:
         """Returns icon based on actual measurement value."""
-        value = self.state  # actual value
+        value = self.native_value  # self.state  # actual value
         # Verify that "value" is a Float
-        try:
-            value = float(value)
-        except (TypeError, ValueError):
-            # return "mdi:help"  # Fallback-Icon for invalid values
-            value = float(0)
-            return self.get_icon(self.measurement_name, value)
+        # try:
+        #    if value is float:
+        #        value = float(value)
+        #    else:
+        #        value = 0.0
+        # except (TypeError, ValueError):
+        # return "mdi:help"  # Fallback-Icon for invalid values
+        #    value = float(0)
+        #    return self.get_icon(self.measurement_name, value)
         # get the icon
         return self.get_icon(self.measurement_name, value)
 
