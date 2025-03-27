@@ -7,7 +7,6 @@ from typing import Any
 
 from homeassistant.components.sensor import SensorEntity, StateType
 from homeassistant.config_entries import ConfigEntry
-from homeassistant.const import STATE_UNAVAILABLE
 from homeassistant.core import HomeAssistant
 from homeassistant.exceptions import ConfigEntryNotReady
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
@@ -201,7 +200,6 @@ class TFAmeSensorEntity(SensorEntity):
         }
         # History
         self.rain_history: SensorHistory = SensorHistory(max_age_minutes=60)
-        # self.rain_history.__init__()
 
         # When this is a station add URL to station
         hex_value = int(sensor_id[:2], 16)
@@ -272,7 +270,7 @@ class TFAmeSensorEntity(SensorEntity):
     # ---- Property: measurement value of an entity itself ----
     @property
     # def state(self) -> None | int | float | str | StateType:
-    def native_value(self) -> None | int | float | str | StateType:
+    def native_value(self) -> StateType:  # None | int | float | str | StateType:
         """Actual measurement value."""
         try:
             # Is measurement value still valid or old
@@ -321,9 +319,7 @@ class TFAmeSensorEntity(SensorEntity):
                         raise
 
             else:
-                measurement_value = (
-                    None  # TO.DO insert again or use other value STATE_UNAVAILABLE
-                )
+                measurement_value = None  # STATE_UNAVAILABLE  #   None  # TO.DO insert again or use other value STATE_UNAVAILABLE
 
         except (ValueError, TypeError, KeyError):
             return None  # Wrong data, Home Assistant shows sensor as "unavailable"
@@ -368,28 +364,23 @@ class TFAmeSensorEntity(SensorEntity):
     def icon(self) -> str:
         """Returns icon based on actual measurement value."""
         value = self.native_value  # self.state  # actual value
-        # Verify that "value" is a Float
-        # try:
-        #    if value is float:
-        #        value = float(value)
-        #    else:
-        #        value = 0.0
-        # except (TypeError, ValueError):
-        # return "mdi:help"  # Fallback-Icon for invalid values
-        #    value = float(0)
-        #    return self.get_icon(self.measurement_name, value)
         # get the icon
         return self.get_icon(self.measurement_name, value)
 
     # ---- Get an icon for measurement type based on measurement value (see MDI list) ----
-    def get_icon(self, measurement_type, value):
+    def get_icon(self, measurement_type, value_state):
         """Return icon for a sensor type."""
+
+        if value_state is None:
+            value = value_state  # use None
+        else:
+            value = float(value_state)
 
         # Temperature & temperatue probe
         if (measurement_type == "temperature") | (
             measurement_type == "temperature_probe"
         ):
-            if value == STATE_UNAVAILABLE:
+            if value is None:
                 return ICON_MAPPING["temperature"]["default"]
             if value >= 25:
                 return ICON_MAPPING["temperature"]["high"]
@@ -399,7 +390,7 @@ class TFAmeSensorEntity(SensorEntity):
 
         # Humidity
         if measurement_type == "humidity":
-            if value == STATE_UNAVAILABLE:
+            if value is None:
                 return ICON_MAPPING["humidity"]["default"]
             if (value >= 65) | (value <= 30):
                 return ICON_MAPPING["humidity"]["alert"]
@@ -415,7 +406,7 @@ class TFAmeSensorEntity(SensorEntity):
 
         # RSSI value for 868 MHz reception: range 0...255
         if measurement_type == "rssi":
-            if value == STATE_UNAVAILABLE:
+            if value is None:
                 return ICON_MAPPING["rssi"]["weak"]
 
             if value < 100:
@@ -453,7 +444,7 @@ class TFAmeSensorEntity(SensorEntity):
     # Remark: there are only 8 arrows for direction but 16 wind direction so icon does not match optimal
     def get_wind_direction_icon(self, value):
         """Return icon for wind direction based on value 0 to 15."""
-        if value == STATE_UNAVAILABLE:
+        if value is None:
             return "mdi:compass-outline"
 
         if 0 <= value <= 1:
