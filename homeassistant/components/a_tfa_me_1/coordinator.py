@@ -100,6 +100,45 @@ class TFAmeDataCoordinator(DataUpdateCoordinator):
                                     "ts": sensor["ts"],
                                 }
 
+                                if measurement == "wind_direction":
+                                    entity_id_wind2 = f"{entity_id}_deg"  # Entity ID
+                                    # entity_id_wind3 = f"{entity_id}_nam"  # Entity ID
+                                    uint_str = ""
+                                    val = int(values["value"])
+                                    if 0 <= val <= 15:
+                                        direction = [
+                                            "N",
+                                            "NNE",
+                                            "NE",
+                                            "ENE",
+                                            "E",
+                                            "ESE",
+                                            "SE",
+                                            "SSE",
+                                            "S",
+                                            "SSW",
+                                            "SW",
+                                            "WSW",
+                                            "W",
+                                            "WNW",
+                                            "NW",
+                                            "NNW",
+                                            "N",
+                                        ]
+                                        uint_str = direction[val]
+                                    parsed_data[entity_id]["unit"] = uint_str
+
+                                    parsed_data[entity_id_wind2] = {
+                                        "sensor_id": sensor_id,
+                                        "gateway_id": gateway_id,
+                                        "sensor_name": f"{sensor['name']} deg",
+                                        "measurement": measurement,
+                                        "value": values["value"],
+                                        "unit": "°",
+                                        "timestamp": sensor.get("timestamp", "unknown"),
+                                        "ts": sensor["ts"],
+                                    }
+
                                 if measurement == "rain":
                                     entity_id_2 = f"{entity_id}_rel"  # Entity ID
                                     parsed_data[entity_id_2] = {
