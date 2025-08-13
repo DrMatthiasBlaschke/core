@@ -272,6 +272,17 @@ class TFAmeSensorEntity(SensorEntity):
                         measurement_value = round(measurement_value, 1)
                         raise
 
+                # Is this rain sensor last changed
+                if "rain_last" in self.entity_id:
+                    try:
+                        measurement_value = 0
+                        state = self.hass.states.get(self.entity_id)
+                        if state is not None:
+                            measurement_value = state.last_changed_timestamp
+                    except Exception:
+                        measurement_value = 0
+                        raise
+
                 # Is this wind sensor, add degrees entity
                 if "wind_direction_deg" in self.entity_id:
                     try:

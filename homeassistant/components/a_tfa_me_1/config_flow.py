@@ -22,6 +22,7 @@ from homeassistant.helpers.selector import (
 )
 
 from .const import CONF_INTERVAL, CONF_MULTIPLE_ENTITIES, DOMAIN
+from .coordinator import TFAmeDataCoordinator
 from .data import TFAmeData, TFAmeException
 
 # Scheme for IP/Domain and poll interval
@@ -284,7 +285,11 @@ class OptionsFlowHandler(OptionsFlow):
                 )
                 await coordinator.async_refresh()
                 # Update all entities on dashboard
-                for entity in coordinator.sensor_entity_list:
+                cordy: TFAmeDataCoordinator = coordinator
+                for number in range(1, len(cordy.sensor_entity_list)):
+                    entity = coordinator.sensor_entity_list[number]
+                    msg_reset = f"{entity} reset"
+                    _LOGGER.info(msg_reset)
                     await self.hass.services.async_call(
                         "homeassistant", "update_entity", {"entity_id": entity}
                     )

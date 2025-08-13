@@ -219,6 +219,21 @@ class TFAmeDataCoordinator(DataUpdateCoordinator):
                                         "ts": sensor["ts"],
                                         "reset_rain": self.reset_rain_sensors,
                                     }
+                                    # rain last changed
+                                    # entity_id_4 = f"{entity_id}_last"  # Entity ID
+                                    # parsed_data[entity_id_4] = {
+                                    #    "sensor_id": sensor_id,
+                                    #    "gateway_id": gateway_id,
+                                    #    "sensor_name": f"{sensor['name']}",
+                                    #    "measurement": f"{measurement}_last",
+                                    #    "value": values["value"],
+                                    #    "unit": "",
+                                    #    "timestamp": sensor.get(
+                                    #        "timestamp", "unknown"
+                                    #    ),  # datetime.utcnow()
+                                    #    "ts": sensor["ts"],
+                                    #    "reset_rain": self.reset_rain_sensors,
+                                    # }
 
                         self.reset_rain_sensors = False
                         if self.first_init < 2:
