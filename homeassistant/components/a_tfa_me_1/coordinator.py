@@ -98,12 +98,33 @@ class TFAmeDataCoordinator(DataUpdateCoordinator):
                                         "timestamp", "unknown"
                                     ),  # datetime.utcnow()
                                     "ts": sensor["ts"],
+                                    "info": "",
                                 }
 
+                                if measurement == "lowbatt":
+                                    parsed_data[entity_id]["unit"] = ""  # remove "unit"
+                                    entity_id_lowbatt2 = f"{entity_id}_txt"
+                                    # lowbatt as direction as text
+                                    parsed_data[entity_id_lowbatt2] = {
+                                        "sensor_id": sensor_id,
+                                        "gateway_id": gateway_id,
+                                        "sensor_name": f"{sensor['name']}",
+                                        "measurement": "lowbatt_text",
+                                        "value": values["value"],
+                                        "text": values["unit"],
+                                        "uint": "",
+                                        "timestamp": sensor.get("timestamp", "unknown"),
+                                        "ts": sensor["ts"],
+                                    }
+
                                 if measurement == "wind_direction":
-                                    entity_id_wind2 = f"{entity_id}_deg"  # Entity ID
-                                    # entity_id_wind3 = f"{entity_id}_nam"  # Entity ID
-                                    uint_str = ""
+                                    entity_id_wind2 = (
+                                        f"{entity_id}_deg"  # Entity ID for degrees
+                                    )
+                                    entity_id_wind3 = (
+                                        f"{entity_id}_txt"  # Entity ID for text
+                                    )
+                                    uint_str = "-"
                                     val = int(values["value"])
                                     if 0 <= val <= 15:
                                         direction = [
@@ -126,26 +147,40 @@ class TFAmeDataCoordinator(DataUpdateCoordinator):
                                             "N",
                                         ]
                                         uint_str = direction[val]
-                                    parsed_data[entity_id]["unit"] = uint_str
+                                    # parsed_data[entity_id]["unit"] = uint_str
 
+                                    # wind direction in degrees
                                     parsed_data[entity_id_wind2] = {
                                         "sensor_id": sensor_id,
                                         "gateway_id": gateway_id,
-                                        "sensor_name": f"{sensor['name']} deg",
-                                        "measurement": measurement,
+                                        "sensor_name": f"{sensor['name']}",
+                                        "measurement": f"{measurement}_deg",
                                         "value": values["value"],
                                         "unit": "°",
                                         "timestamp": sensor.get("timestamp", "unknown"),
                                         "ts": sensor["ts"],
                                     }
+                                    # wind direction as text
+                                    parsed_data[entity_id_wind3] = {
+                                        "sensor_id": sensor_id,
+                                        "gateway_id": gateway_id,
+                                        "sensor_name": f"{sensor['name']}",
+                                        "measurement": "wind_direction_text",
+                                        "value": values["value"],
+                                        "text": "?",
+                                        "uint": "",
+                                        "timestamp": sensor.get("timestamp", "unknown"),
+                                        "ts": sensor["ts"],
+                                    }
+                                    parsed_data[entity_id_wind3]["text"] = uint_str
 
                                 if measurement == "rain":
                                     entity_id_2 = f"{entity_id}_rel"  # Entity ID
                                     parsed_data[entity_id_2] = {
                                         "sensor_id": sensor_id,
                                         "gateway_id": gateway_id,
-                                        "sensor_name": f"{sensor['name']} rel",
-                                        "measurement": measurement,
+                                        "sensor_name": f"{sensor['name']}",
+                                        "measurement": f"{measurement}_relative",
                                         "value": values["value"],
                                         "unit": values["unit"],
                                         "timestamp": sensor.get(
@@ -154,12 +189,28 @@ class TFAmeDataCoordinator(DataUpdateCoordinator):
                                         "ts": sensor["ts"],
                                         "reset_rain": self.reset_rain_sensors,
                                     }
+                                    # rain last hour
                                     entity_id_3 = f"{entity_id}_hour"  # Entity ID
                                     parsed_data[entity_id_3] = {
                                         "sensor_id": sensor_id,
                                         "gateway_id": gateway_id,
-                                        "sensor_name": f"{sensor['name']} hour",
-                                        "measurement": measurement,
+                                        "sensor_name": f"{sensor['name']}",
+                                        "measurement": f"{measurement}_1_hour",
+                                        "value": values["value"],
+                                        "unit": values["unit"],
+                                        "timestamp": sensor.get(
+                                            "timestamp", "unknown"
+                                        ),  # datetime.utcnow()
+                                        "ts": sensor["ts"],
+                                        "reset_rain": self.reset_rain_sensors,
+                                    }
+                                    # rain last 24 hours
+                                    entity_id_4 = f"{entity_id}_24hours"  # Entity ID
+                                    parsed_data[entity_id_4] = {
+                                        "sensor_id": sensor_id,
+                                        "gateway_id": gateway_id,
+                                        "sensor_name": f"{sensor['name']}",
+                                        "measurement": f"{measurement}_24_hours",
                                         "value": values["value"],
                                         "unit": values["unit"],
                                         "timestamp": sensor.get(

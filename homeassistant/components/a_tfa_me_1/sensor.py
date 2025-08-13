@@ -11,100 +11,9 @@ from homeassistant.core import HomeAssistant
 from homeassistant.exceptions import ConfigEntryNotReady
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
 
-from .const import DOMAIN
+from .const import DEVICE_MAPPING, DOMAIN, ICON_MAPPING, TIMEOUT_MAPPING
 from .coordinator import TFAmeDataCoordinator
-
-# Used icons for entities, see also
-# https://pictogrammers.com/library/mdi/
-ICON_MAPPING = {
-    "temperature": {
-        "default": "mdi:thermometer",
-        "high": "mdi:thermometer-high",
-        "low": "mdi:thermometer-low",
-    },
-    "humidity": {"default": "mdi:water-percent", "alert": "mdi:water-percent-alert"},
-    "co2": {"default": "mdi:molecule-co2"},
-    "barometric_pressure": {"default": "mdi:gauge"},
-    "rssi": {
-        "default": "mdi:wifi",
-        "weak": "mdi:wifi-strength-1",
-        "middle": "mdi:wifi-strength-2",
-        "good": "mdi:wifi-strength-3",
-        "strong": "mdi:wifi-strength-4",
-    },
-    "lowbatt": {
-        "default": "mdi:battery",
-        "low": "mdi:battery-alert",
-        "full": "mdi:battery",
-    },
-    "wind_direction": {"default": "mdi:compass-outline"},
-    "wind": {
-        "default": "mdi:weather-windy",
-        "wind": "mdi:weather-windy-variant",
-        "gust": "mdi:weather-windy",
-    },
-    "rain": {
-        "none": "mdi:weather-sunny",
-        "light": "mdi:weather-partly-rainy",
-        "moderate": "mdi:weather-rainy",
-        "heavy": "mdi:weather-pouring",
-    },
-}
-
-# Short description of all stations & sensors
-DEVICE_MAPPING = {
-    # Stations
-    "01": "Station 01: T/H",
-    "02": "Station 02: T/H",
-    "03": "Station 03: T/H",
-    "04": "Station 04: T/H",
-    "05": "Station 05: T/H/BP",
-    "06": "Station 06: T/H",
-    "07": "Station 07: T/H",
-    "08": "Station 08: T/H",
-    # Add other stations here ...
-    # Debug station ID
-    "99": "Station 99: T/H/BP/CO2",
-    # Sensors
-    "A0": "Sensor A0: T/H",
-    "A1": "Sensor A1: Rain",
-    "A2": "Sensor A2: Wind: D/W/G",
-    "A3": "Sensor A3: T/TP",
-    "A4": "Sensor Prof. A4: T/H/TP",
-    "A5": "Sensor A5: T",
-    "A6": "Sensor Prof. A6: T/H",
-    # Add other sensors here ...
-}
-
-# Timeout time use sensor marked "old"/unavailable
-# Rule: Timeout time = 2 * (transmission interval in seconds) + 30
-TIMEOUT_FOR_1_MIN = (2 * 1 * 60) + 30
-TIMEOUT_FOR_5_MIN = (2 * 5 * 60) + 30
-TIMEOUT_FOR_120_MIN = (2 * 120 * 60) + 30
-
-TIMEOUT_MAPPING = {
-    # Stations
-    "01": TIMEOUT_FOR_5_MIN,
-    "02": TIMEOUT_FOR_5_MIN,
-    "03": TIMEOUT_FOR_5_MIN,
-    "04": TIMEOUT_FOR_5_MIN,
-    "05": TIMEOUT_FOR_5_MIN,
-    "06": TIMEOUT_FOR_5_MIN,
-    "07": TIMEOUT_FOR_5_MIN,
-    "08": TIMEOUT_FOR_5_MIN,
-    # Add other stations here ...
-    # Debug station ID
-    "99": TIMEOUT_FOR_5_MIN,
-    # Sensors
-    "A0": TIMEOUT_FOR_5_MIN,  # Sensor A0: T/H
-    "A1": TIMEOUT_FOR_120_MIN,  # Sensor A1: Rain
-    "A2": TIMEOUT_FOR_5_MIN,  # Sensor A2: Wind: D/W/G
-    "A3": TIMEOUT_FOR_5_MIN,  # Sensor A3: T/TP
-    "A4": TIMEOUT_FOR_1_MIN,  # Sensor Prof. A4: T/H/TP
-    "A5": TIMEOUT_FOR_5_MIN,  # Sensor A5: T
-    "A6": TIMEOUT_FOR_1_MIN,  # Sensor Prof. A6: T/H
-    # Add other sensors here ...
-}
+from .text import TFAmeTextEntity
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -123,16 +32,23 @@ async def async_setup_entry(
         # await coordinator.async_config_entry_first_refresh()
         # Collect all entities (entities are part of device)
         sensors_start = []
+        sensors_start_txt = []
         for entity_id in coordinator.data:
             sensor_id = coordinator.data[entity_id]["sensor_id"]
             if entity_id not in coordinator.sensor_entity_list:
-                sensors_start.append(
-                    TFAmeSensorEntity(coordinator, sensor_id, entity_id)
-                )
+                if "_txt" in entity_id:
+                    sensors_start_txt.append(
+                        TFAmeTextEntity(coordinator, sensor_id, entity_id)
+                    )
+                else:
+                    sensors_start.append(
+                        TFAmeSensorEntity(coordinator, sensor_id, entity_id)
+                    )
                 coordinator.sensor_entity_list.append(entity_id)
 
         # Add all entities
         async_add_entities(sensors_start, True)
+        async_add_entities(sensors_start_txt, True)
 
     except Exception as error:
         raise ConfigEntryNotReady(
@@ -145,14 +61,24 @@ async def async_setup_entry(
         coordinator = entry.runtime_data
 
         new_sensors = []
+        new_sensors_txt = []
         for entity_id in coordinator.data:
             sensor_id = coordinator.data[entity_id]["sensor_id"]
             if entity_id not in coordinator.sensor_entity_list:
-                new_sensors.append(TFAmeSensorEntity(coordinator, sensor_id, entity_id))
+                if "_txt" in entity_id:
+                    new_sensors_txt.append(
+                        TFAmeTextEntity(coordinator, sensor_id, entity_id)
+                    )
+                else:
+                    new_sensors.append(
+                        TFAmeSensorEntity(coordinator, sensor_id, entity_id)
+                    )
                 coordinator.sensor_entity_list.append(entity_id)
 
         if new_sensors:
             async_add_entities(new_sensors)
+        if new_sensors_txt:
+            async_add_entities(new_sensors_txt)
 
     # Save function in Home Assistant so that it can be called as service
     hass.data[DOMAIN][
@@ -200,6 +126,7 @@ class TFAmeSensorEntity(SensorEntity):
         }
         # History
         self.rain_history: SensorHistory = SensorHistory(max_age_minutes=60)
+        self.rain_history_24: SensorHistory = SensorHistory(max_age_minutes=(24 * 60))
 
         # When this is a station add URL to station
         hex_value = int(sensor_id[:2], 16)
@@ -294,7 +221,7 @@ class TFAmeSensorEntity(SensorEntity):
                     measurement_value = round(measurement_value, 1)
 
                 # Is this rain sensor last hour
-                elif "rain_hour" in self.entity_id:
+                if "rain_hour" in self.entity_id:
                     try:
                         str_rain = self.entity_id
                         str_rain = str_rain.replace("_hour", "")
@@ -307,9 +234,36 @@ class TFAmeSensorEntity(SensorEntity):
                             measurement_value = float(newest[0]) - float(oldest[0])
                             measurement_value = round(measurement_value, 1)
                     except Exception as error:
-                        msg: str = (
+                        msg2: str = (
                             "Exception requesting data: str_rain = '"
                             + str_rain
+                            + "' "
+                            + str(error.__doc__)
+                        )
+                        _LOGGER.error(msg2)
+                        measurement_value = float(0)
+                        measurement_value = round(measurement_value, 1)
+                        raise
+
+                # Is this rain sensor last 24 hours
+                if "rain_24hours" in self.entity_id:
+                    try:
+                        str_rain_24 = self.entity_id
+                        str_rain_24 = str_rain_24.replace("_24hours", "")
+                        value = self.coordinator.data[str_rain_24]["value"]
+                        ts = self.coordinator.data[str_rain_24]["ts"]
+                        self.rain_history_24.add_measurement(value, ts)
+                        measurement_value = float(0)
+                        if len(self.rain_history_24.data) >= 2:
+                            oldest, newest = (
+                                self.rain_history_24.get_oldest_and_newest()
+                            )
+                            measurement_value = float(newest[0]) - float(oldest[0])
+                            measurement_value = round(measurement_value, 1)
+                    except Exception as error:
+                        msg: str = (
+                            "Exception requesting data: str_rain_24 = '"
+                            + str_rain_24
                             + "' "
                             + str(error.__doc__)
                         )
@@ -319,7 +273,7 @@ class TFAmeSensorEntity(SensorEntity):
                         raise
 
                 # Is this wind sensor, add degrees entity
-                elif "wind_direction_deg" in self.entity_id:
+                if "wind_direction_deg" in self.entity_id:
                     try:
                         str_wind_deg = self.entity_id
                         str_wind_deg = str_wind_deg.replace("_deg", "")
@@ -328,13 +282,13 @@ class TFAmeSensorEntity(SensorEntity):
                         measurement_value = float(0)
                         measurement_value = float(value) * (360 / 16)
                     except Exception as error:
-                        msg2: str = (
+                        msg_wind_deg: str = (
                             "Exception requesting data: str_wind_deg = '"
                             + str_wind_deg
                             + "' "
                             + str(error.__doc__)
                         )
-                        _LOGGER.error(msg2)
+                        _LOGGER.error(msg_wind_deg)
                         measurement_value = float(0)
                         measurement_value = round(measurement_value, 1)
                         raise
@@ -358,7 +312,7 @@ class TFAmeSensorEntity(SensorEntity):
                 return None  # Home Assistant shows "unavailable" ?
             return str(unit)
         except (ValueError, TypeError, KeyError):
-            return "?"
+            return ""
 
     # ---- Property: Extra attributes dictionary for an entity ----
     # "sensor_name": Sensor ID, e.g. "A01234456"
@@ -384,7 +338,7 @@ class TFAmeSensorEntity(SensorEntity):
     @property
     def icon(self) -> str:
         """Returns icon based on actual measurement value."""
-        value = self.native_value  # self.state  # actual value
+        value = self.native_value
         # get the icon
         return self.get_icon(self.measurement_name, value)
 
@@ -395,7 +349,10 @@ class TFAmeSensorEntity(SensorEntity):
         if value_state is None:
             value = value_state  # use None
         else:
-            value = float(value_state)
+            try:
+                value = float(value_state)
+            except (ValueError, TypeError, KeyError):
+                value = 0
 
         # Temperature & temperatue probe
         if (measurement_type == "temperature") | (
@@ -447,6 +404,8 @@ class TFAmeSensorEntity(SensorEntity):
             )
 
         # Wind direction, speed & gust
+        if measurement_type == "wind_direction_deg":
+            return self.get_wind_direction_icon(value / (360 / 16))
         if measurement_type == "wind_direction":
             return self.get_wind_direction_icon(value)
         if measurement_type == "wind_gust":
@@ -458,10 +417,32 @@ class TFAmeSensorEntity(SensorEntity):
         if measurement_type == "rain":
             return ICON_MAPPING["rain"]["moderate"]
 
+        if (
+            (measurement_type == "rain_relative")
+            | (measurement_type == "rain_1_hour")
+            | (measurement_type == "rain_24_hours")
+        ):
+            return self.get_rain_direction_icon(value)
+
         # Unknown measurement type
         return "mdi:help-circle"  # Fallback-Icon
 
-    # ---- Get an icon for wind direction based on values (o...15) ----
+    # ---- Get an icon for rain ----
+    def get_rain_direction_icon(self, value):
+        """Return icon for rain based on value."""
+        if value is None:
+            return "mdi:compass-outline"
+        if value < 0.1:
+            return ICON_MAPPING["rain"]["none"]
+        if 0.1 <= value < 0.5:
+            return ICON_MAPPING["rain"]["light"]
+        if 0.5 <= value < 4:
+            return ICON_MAPPING["rain"]["moderate"]
+        if value >= 4:
+            return ICON_MAPPING["rain"]["heavy"]
+        return ICON_MAPPING["rain"]["moderate"]
+
+    # ---- Get an icon for wind direction based on values (0...15) ----
     # Remark: there are only 8 arrows for direction but 16 wind direction so icon does not match optimal
     def get_wind_direction_icon(self, value):
         """Return icon for wind direction based on value 0 to 15."""
@@ -496,13 +477,13 @@ class TFAmeSensorEntity(SensorEntity):
             timeout_val = 0
         return timeout_val
 
-    # ----  ----
+    # ---- Update ----
     async def async_update(self) -> None:
         """Manual Updating."""
         await self.coordinator.async_request_refresh()
 
 
-# ---- Class to store history, specially for rain sensor to calculate rain of "last hour" ----
+# ---- Class to store a history, specially for rain sensor to calculate rain of "last hour", "last 24 hours" ----
 class SensorHistory:
     """History queue."""
 
