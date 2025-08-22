@@ -13,6 +13,9 @@ from .coordinator import TFAmeDataCoordinator
 class TFAmeTextEntity(TextEntity):
     """Represents in Home Assistant a text for a sensor."""
 
+    _attr_has_entity_name = True
+    _attr_should_poll = True
+
     def __init__(
         self,
         coordinator: TFAmeDataCoordinator,
@@ -36,7 +39,7 @@ class TFAmeTextEntity(TextEntity):
                 (
                     DOMAIN,
                     ids_str,
-                )  # this IDs are used to ground entities tom sensors
+                )  # this IDs are used to ground entities
             },  # Unique ID for device/sensor
             "name": self.format_string_tfa_id(
                 self.sensor_id, self.gateway_id, self.multiple_entities
@@ -83,7 +86,6 @@ class TFAmeTextEntity(TextEntity):
         """Convert string 'xxxxxxxxx' into 'TFA.me XXX-XXX-XXX'."""
         if multiple_entities:
             return f"TFA.me {s[:3].upper()}-{s[3:6].upper()}-{s[6:].upper()}({gw_id.upper()})"
-        # else:
         return f"TFA.me {s[:3].upper()}-{s[3:6].upper()}-{s[6:].upper()}"
 
     # ---- String helper for sensor/station types ----
@@ -99,7 +101,7 @@ class TFAmeTextEntity(TextEntity):
         return info_str
 
     # ---- Property: Unique entity ID ----
-    # "tfame_sensor.id_measurement" e.g. "tfame_sensor.a12345678_temperature"
+    # "sensor.id_measurement" e.g. "sensor.a12345678_temperature"
     @property
     def unique_id(self) -> str:
         """Unique entity ID for Home Assistant."""

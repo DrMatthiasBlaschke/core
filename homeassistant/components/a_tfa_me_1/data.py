@@ -18,13 +18,6 @@ class TFAmeData:
     async def get_identifier(self) -> str:
         """Request a unique ID from a device."""
         # We just take the host name
-        #    url = f"{self.base_url}/identifier"
-        #    async with aiohttp.ClientSession() as session:
-        #        async with session.get(url, timeout=10) as response:
-        #            if response.status != 200:
-        #                raise TFAmeException("Error requesting ID")
-        #           data = await response.json()
-        #            return data.get("id")
         return self.host
 
 

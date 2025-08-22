@@ -90,6 +90,9 @@ async def async_setup_entry(
 class TFAmeSensorEntity(SensorEntity):
     """Represents in Home Assistant a single measurement of a sensor."""
 
+    _attr_has_entity_name = True
+    _attr_should_poll = True
+
     def __init__(
         self,
         coordinator: TFAmeDataCoordinator,
@@ -164,7 +167,7 @@ class TFAmeSensorEntity(SensorEntity):
         return info_str
 
     # ---- Property: Unique entity ID ----
-    # "tfame_sensor.id_measurement" e.g. "tfame_sensor.a12345678_temperature"
+    # "sensor.id_measurement" e.g. "sensor.a12345678_temperature"
     @property
     def unique_id(self) -> str:
         """Unique entity ID for Home Assistant."""
@@ -196,7 +199,6 @@ class TFAmeSensorEntity(SensorEntity):
 
     # ---- Property: measurement value of an entity itself ----
     @property
-    # def state(self) -> None | int | float | str | StateType:
     def native_value(self) -> StateType:  # None | int | float | str | StateType:
         """Actual measurement value."""
         try:
