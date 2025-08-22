@@ -47,6 +47,7 @@ async def async_setup_entry(
 
     # First request for sensor data
     await coordinator.async_config_entry_first_refresh()
+
     # Save coordinator
     entry.runtime_data = coordinator
 

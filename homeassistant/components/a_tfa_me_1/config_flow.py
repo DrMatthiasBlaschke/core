@@ -90,13 +90,11 @@ class TFAmeConfigFlow(ConfigFlow, domain=DOMAIN):
 
         # if user_input is not None:
         if is_valid_ip_or_tfa_me(user_input):
-            # host_str = user_input.get("ip_address")  # Get value as string
             title_str: str = "TFA.me Station"
             if isinstance(ip_host_str, str):
                 title_str = "TFA.me Station '" + ip_host_str.upper() + "'"
 
             try:
-                # device_list = self._load_device_list()
                 client = TFAmeData(user_input[CONF_IP_ADDRESS])
                 identifier = await client.get_identifier()
             except TFAmeException:
