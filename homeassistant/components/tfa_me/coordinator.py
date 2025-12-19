@@ -20,7 +20,7 @@ from homeassistant.exceptions import ConfigEntryNotReady
 from homeassistant.helpers.aiohttp_client import async_get_clientsession
 from homeassistant.helpers.update_coordinator import DataUpdateCoordinator, UpdateFailed
 
-from .const import DOMAIN
+from .const import DOMAIN, LOCAL_POLL_INTERVAL, VALID_JSON_KEYS
 from .data import resolve_tfa_host
 
 _LOGGER = logging.getLogger(__name__)
@@ -36,7 +36,6 @@ class TFAmeDataCoordinator(DataUpdateCoordinator):
         hass: HomeAssistant,
         config_entry: ConfigEntry,
         host: str,
-        interval: timedelta,
         name_with_station_id: bool,
     ) -> None:
         """Initialize data update coordinator."""
@@ -47,7 +46,6 @@ class TFAmeDataCoordinator(DataUpdateCoordinator):
             name_with_station_id  # from config_entry.data[CONF_NAME_WITH_STATION_ID]
         )
         self.gateway_id = ""
-        self.poll_interval = interval
 
         # Resolve host only once for client construction:
         resolved_host = resolve_tfa_host(host)
@@ -62,7 +60,7 @@ class TFAmeDataCoordinator(DataUpdateCoordinator):
             hass,
             _LOGGER,
             name=DOMAIN,
-            update_interval=self.poll_interval,
+            update_interval=timedelta(seconds=LOCAL_POLL_INTERVAL),
         )
 
     async def _async_update_data(self):
@@ -81,22 +79,53 @@ class TFAmeDataCoordinator(DataUpdateCoordinator):
         except (TFAmeHTTPError, TFAmeJSONError) as err:
             # Device responding but data invalid
             _LOGGER.exception("Invalid response from TFA.me gateway %s", self.host)
-            raise UpdateFailed(f"Invalid response: {err}") from err
+            raise UpdateFailed(
+                translation_domain=DOMAIN,
+                translation_key="invalid_response_error",
+                translation_placeholders={
+                    "error": str(err),
+                },
+            ) from err
 
         except (TFAmeTimeoutError, TFAmeConnectionError, TFAmeException) as err:
             # Timeout, connection error, other unknown client error
             _LOGGER.exception("Error while updating TFA.me data from %s", self.host)
             if self.first_init == 0:
-                raise ConfigEntryNotReady(f"Cannot reach {self.host}: {err}") from err
-            raise UpdateFailed(f"Connection problem: {err}") from err
+                raise ConfigEntryNotReady(
+                    translation_domain="my_integration",
+                    translation_key="cannot_reach_host",
+                    translation_placeholders={
+                        "host": self.host,
+                        "error": str(err),
+                    },
+                ) from err
+            raise UpdateFailed(
+                translation_domain=DOMAIN,
+                translation_key="connection_error",
+                translation_placeholders={
+                    "error": str(err),
+                },
+            ) from err
 
         except Exception as err:  # Fallback for unexpected errors
             _LOGGER.exception(
                 "Unexpected error while updating TFA.me data from %s", self.host
             )
             if self.first_init == 0:
-                raise ConfigEntryNotReady(f"Unexpected error: {err}") from err
-            raise UpdateFailed(f"Unexpected error: {err}") from err
+                raise ConfigEntryNotReady(
+                    translation_domain=DOMAIN,
+                    translation_key="unexpected_error",
+                    translation_placeholders={
+                        "error": str(err),
+                    },
+                ) from err
+            raise UpdateFailed(
+                translation_domain=DOMAIN,
+                translation_key="unexpected_error",
+                translation_placeholders={
+                    "error": str(err),
+                },
+            ) from err
 
         else:
             if self.first_init < 2:
@@ -121,59 +150,65 @@ class TFAmeDataCoordinator(DataUpdateCoordinator):
                 sensor_id = sensor["sensor_id"]
 
                 for m_name, values in sensor.get("measurements", {}).items():
-                    entity_id = f"sensor.{gateway_id}_{sensor_id}_{m_name}"
+                    if measuerment_in_list(m_name, VALID_JSON_KEYS):
+                        unique_id = f"sensor.{gateway_id}_{sensor_id}_{m_name}"
 
-                    # Base data for all entities
-                    base = {
-                        "sensor_id": sensor_id,
-                        "gateway_id": gateway_id,
-                        "sensor_name": sensor["name"],
-                        "measurement": m_name,
-                        "value": values["value"],
-                        "unit": values["unit"],
-                        "timestamp": sensor.get("timestamp", formatted_time_str),
-                        "ts": sensor["ts"],
-                    }
-                    parsed_data[entity_id] = base
-
-                    # Special cases
-                    # Low battery: remove unit
-                    if m_name == "lowbatt":
-                        parsed_data[entity_id]["unit"] = ""
-
-                    # Wind direction: create extra entity for degrees
-                    if m_name == "wind_direction":
-                        deg_id = f"{entity_id}_deg"
-                        parsed_data[deg_id] = {
-                            **base,
-                            "measurement": "wind_direction_deg",
-                            "unit": "°",
+                        # Base data for all entities
+                        base = {
+                            "sensor_id": sensor_id,
+                            "gateway_id": gateway_id,
+                            "sensor_name": sensor["name"],
+                            "measurement": m_name,
+                            "value": values["value"],
+                            "unit": values["unit"],
+                            "timestamp": sensor.get("timestamp", formatted_time_str),
+                            "ts": sensor["ts"],
                         }
+                        parsed_data[unique_id] = base
 
-                    # Rain: relative, 1 hour, 24 hours
-                    if m_name == "rain":
-                        # relative
-                        parsed_data[f"{entity_id}_rel"] = {
-                            **base,
-                            "measurement": "rain_relative",
-                            "reset_rain": False,
-                        }
+                        # Special cases
+                        # Low battery: remove unit
+                        if m_name == "lowbatt":
+                            parsed_data[unique_id]["unit"] = ""
 
-                        # 1-hour rain
-                        parsed_data[f"{entity_id}_hour"] = {
-                            **base,
-                            "measurement": "rain_1_hour",
-                            "reset_rain": False,
-                        }
+                        # Wind direction: create extra entity for degrees
+                        if m_name == "wind_direction":
+                            deg_id = f"{unique_id}_deg"
+                            parsed_data[deg_id] = {
+                                **base,
+                                "measurement": "wind_direction_deg",
+                                "unit": "°",
+                            }
 
-                        # 24 hours rain
-                        parsed_data[f"{entity_id}_24hours"] = {
-                            **base,
-                            "measurement": "rain_24_hours",
-                            "reset_rain": False,
-                        }
+                        # Rain: relative, 1 hour, 24 hours
+                        if m_name == "rain":
+                            # relative
+                            parsed_data[f"{unique_id}_rel"] = {
+                                **base,
+                                "measurement": "rain_relative",
+                                "reset_rain": False,
+                            }
+
+                            # 1-hour rain
+                            parsed_data[f"{unique_id}_hour"] = {
+                                **base,
+                                "measurement": "rain_1_hour",
+                                "reset_rain": False,
+                            }
+
+                            # 24 hours rain
+                            parsed_data[f"{unique_id}_24hours"] = {
+                                **base,
+                                "measurement": "rain_24_hours",
+                                "reset_rain": False,
+                            }
 
         except Exception as err:
             raise TFAmeJSONError(f"Invalid JSON response: {err}") from err
         else:
             return parsed_data
+
+
+def measuerment_in_list(s: str, m_list: list[str]) -> bool:
+    """Search whether a string is in list or not."""
+    return s in m_list

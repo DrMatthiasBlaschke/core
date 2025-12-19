@@ -44,7 +44,7 @@ def tfa_me_mock_entry(hass: HomeAssistant, tfa_me_mock_coordinator):
     entry = AsyncMock()
     entry.entry_id = "1234"
     entry.runtime_data = tfa_me_mock_coordinator
-    hass.data.setdefault(DOMAIN, {})[entry.entry_id] = tfa_me_mock_coordinator
+    # hass.data.setdefault(DOMAIN, {})[entry.entry_id] = tfa_me_mock_coordinator
     return entry
 
 

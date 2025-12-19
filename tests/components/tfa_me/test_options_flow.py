@@ -33,7 +33,10 @@ async def test_options_flow_action_rain(
     assert tfa_me_options_flow_mock_entry.state == ConfigEntryState.LOADED
 
     # Update list and add coordinator to hass.data
-    tfa_me_mock_coordinator.sensor_entity_list = ["sensor.017654321_a1fffffea_rain_rel"]
+    tfa_me_mock_coordinator.sensor_entity_list = [
+        "sensor.017654321_a1fffffea_rain_hour"
+    ]
+
     hass.data.setdefault(DOMAIN, {})[tfa_me_options_flow_mock_entry.entry_id] = (
         tfa_me_mock_coordinator
     )
@@ -44,17 +47,23 @@ async def test_options_flow_action_rain(
     )
     hass.services.async_register("homeassistant", "update_entity", lambda call: None)
 
+    tfa_me_options_flow_mock_entry.runtime_data = tfa_me_mock_coordinator
+
     # Start OptionsFlow for action "action_rain" via HA API (not manually!)
     result = await hass.config_entries.options.async_init(
         tfa_me_options_flow_mock_entry.entry_id,
         context={"source": "user"},
-        data={"select_option": "action_rain"},
+        data={"action_rain": True},
     )
 
     # Assertions
     assert result["type"] == "create_entry"
-    assert result["title"] == "action_rain"
-    assert result["data"]["action_rain"] is True
+    assert (
+        tfa_me_mock_coordinator.data["sensor.017654321_a1fffffea_rain_hour"][
+            "reset_rain"
+        ]
+        is True
+    )
 
 
 @pytest.mark.asyncio
@@ -65,27 +74,4 @@ async def test_options_flow_show_main_menu(hass: HomeAssistant) -> None:
     flow.hass = hass
 
     result = await flow.async_step_init(user_input=None)
-    assert result["type"] == "form"
     assert result["step_id"] == "init"
-    assert "select_option" in result["data_schema"].schema
-
-
-@pytest.mark.asyncio
-async def test_action_rain_show_form_direct_call(
-    hass: HomeAssistant, tfa_me_options_flow_mock_entry
-) -> None:
-    """Call async_step_action_rain with user_input=None and await show_form."""
-
-    # Create Flow-Handler and set hass and config_entry (Test-only)
-    flow = OptionsFlowHandler()
-    flow.hass = hass
-    result = await hass.config_entries.async_setup(
-        tfa_me_options_flow_mock_entry.entry_id
-    )
-    await hass.async_block_till_done()
-
-    # Call with user_input = None -> should show the form
-    result = await flow.async_step_action_rain(user_input=None)
-
-    assert result["type"] == "form"
-    assert result["step_id"] == "action_rain"

@@ -25,19 +25,18 @@ class TFAmeData:
         self._hass = hass
         self._address = address.strip()
         self._host = resolve_tfa_host(self._address)
-        self._client: TFAmeClient | None = None
+        self._client: TFAmeClient
+        session = async_get_clientsession(self._hass)
+        # Same base path and options as in the coordinator
+        self._client = TFAmeClient(
+            self._host,
+            "sensors",
+            log_level=1,
+            session=session,
+        )
 
     def _get_client(self) -> TFAmeClient:
         """Return a TFA.me client instance for this host."""
-        if self._client is None:
-            session = async_get_clientsession(self._hass)
-            # Same base path and options as in the coordinator
-            self._client = TFAmeClient(
-                self._host,
-                "sensors",
-                log_level=1,
-                session=session,
-            )
         return self._client
 
     async def get_identifier(self) -> str:

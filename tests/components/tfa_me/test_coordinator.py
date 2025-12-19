@@ -2,7 +2,6 @@
 
 # For test run: "pytest ./tests/components/tfa_me/ --cov=homeassistant.components.tfa_me --cov-report term-missing -vv"
 
-from datetime import timedelta
 from unittest.mock import patch
 
 import pytest
@@ -66,7 +65,6 @@ async def test_update_data_with_ip(
         hass,
         tfa_me_options_flow_mock_entry,
         "017-654-321",
-        timedelta(seconds=30),
         name_with_station_id=True,
     )
     coordinator.first_init = 1
@@ -126,7 +124,6 @@ async def test_async_update_data_exceptions_first_init(
         hass=hass,
         config_entry=tfa_me_mock_entry,
         host="127.0.0.1",
-        interval=timedelta(seconds=30),
         name_with_station_id=False,
     )
 
@@ -162,7 +159,6 @@ async def test_async_update_data_exceptions_after_first_init(
         hass=hass,
         config_entry=tfa_me_mock_entry,
         host="127.0.0.1",
-        interval=timedelta(seconds=30),
         name_with_station_id=False,
     )
     coordinator.first_init = 1  # simulate already initialized

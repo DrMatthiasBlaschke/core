@@ -14,18 +14,11 @@ from homeassistant.config_entries import (
 )
 from homeassistant.const import CONF_IP_ADDRESS
 from homeassistant.core import callback
-from homeassistant.helpers.selector import (
-    SelectOptionDict,
-    SelectSelector,
-    SelectSelectorConfig,
-    SelectSelectorMode,
-)
 
-from .const import CONF_NAME_WITH_STATION_ID, DEFAULT_STATION_NAME, DOMAIN
+from .const import CONF_NAME_WITH_STATION_ID, DEFAULT_STATION_NAME, DOMAIN, RAIN_KEYS
 from .coordinator import TFAmeDataCoordinator
 from .data import TFAmeData, TFAmeException
 
-# Scheme for IP/Domain and poll interval
 DATA_SCHEMA = vol.Schema(
     {
         vol.Required(CONF_IP_ADDRESS): str,
@@ -113,65 +106,42 @@ class TFAmeConfigFlow(ConfigFlow, domain=DOMAIN):
 
 
 class OptionsFlowHandler(OptionsFlow):
-    """Options flow handler (reset rain, etc.) for TFA.me integration."""
+    """Options flow handler for TFA.me integration."""
 
-    async def async_step_init(self, user_input: None) -> ConfigFlowResult:
+    async def async_step_init(self, user_input=None) -> ConfigFlowResult:
         """Handle options menu flow."""
 
-        # Is an option selected?
         if user_input is not None:
-            if "select_option" in user_input:
-                if user_input["select_option"] == "action_rain":
-                    return await self.async_step_action_rain(user_input)
+            if user_input.get("action_rain"):
+                coordinator = self.config_entry.runtime_data
 
-        # No option seletced -> build main option menu
-        opt_dict = [
-            SelectOptionDict(value="none", label="None"),
-            SelectOptionDict(value="action_rain", label="Reset all rain sensors"),
-        ]
-
-        options_schema = vol.Schema(
-            {
-                vol.Required(
-                    "select_option", default="none", description="Select a option:"
-                ): SelectSelector(
-                    SelectSelectorConfig(
-                        options=opt_dict,
-                        mode=SelectSelectorMode.DROPDOWN,  # Dropdown-Menu
-                    )
-                )
-            }
-        )
-
-        return self.async_show_form(step_id="init", data_schema=options_schema)
-
-    async def async_step_action_rain(self, user_input=None) -> ConfigFlowResult:
-        """Entry point for option: Reset all rain sensors."""
-        if user_input is not None:
-            if user_input["select_option"] == "action_rain":
-                coordinator = self.hass.data[DOMAIN][self.config_entry.entry_id]
                 # Store in options
                 self.hass.config_entries.async_update_entry(
                     self.config_entry,
                     options={**self.config_entry.options, "action_rain": True},
                 )
-                # Update all entities on dashboard
+
+                # Set rain reset marker and update all entities on dashboard
                 cordy: TFAmeDataCoordinator = coordinator
                 for entity in cordy.sensor_entity_list:
-                    if "_rain_" in entity:
+                    if any(k in entity for k in RAIN_KEYS):
                         coordinator.data[entity]["reset_rain"] = True
                         msg_reset = f"{entity} rain reset"
                         _LOGGER.info(msg_reset)
 
-                # Update UI
                 coordinator.async_set_updated_data(coordinator.data)
 
-                return self.async_create_entry(
-                    title="action_rain", data=self.config_entry.options
-                )
+            # Options flow must always finish with create_entry
+            return self.async_create_entry(title="", data=self.config_entry.options)
 
-        action_schema_rain = vol.Schema({vol.Required("action_rain"): vol.Boolean()})
-        return self.async_show_form(
-            step_id="action_rain",
-            data_schema=action_schema_rain,
+        schema = vol.Schema(
+            {
+                vol.Optional(
+                    "action_rain",
+                    default=False,
+                    description="Reset all rain sensors",
+                ): bool
+            }
         )
+
+        return self.async_show_form(step_id="init", data_schema=schema)

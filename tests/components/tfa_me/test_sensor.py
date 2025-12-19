@@ -43,7 +43,7 @@ async def test_async_setup_entry_creates_entities(
     }
 
     # Put coordinator into hass.data as the setup function expects
-    hass.data.setdefault(DOMAIN, {})[entry.entry_id] = tfa_me_mock_coordinator
+    entry.runtime_data = tfa_me_mock_coordinator  # hass.data.setdefault(DOMAIN, {})[entry.entry_id] = tfa_me_mock_coordinator
 
     # Mock async_add_entities
     async_add_entities = MagicMock()
@@ -61,6 +61,13 @@ async def test_async_setup_entry_creates_entities(
     # Check entity instances and that sensor_entity_list was updated
     assert all(isinstance(e, TFAmeSensorEntity) for e in entities_arg)
     assert sorted(tfa_me_mock_coordinator.sensor_entity_list) == ["uid_1", "uid_2"]
+
+
+def _stable_state_dict(d: dict) -> dict:
+    d = dict(d)  # shallow copy
+    for k in ("last_changed", "last_updated", "last_reported", "context"):
+        d.pop(k, None)
+    return d
 
 
 # pytest.mark.asyncio
@@ -98,7 +105,10 @@ async def test_tfa_me_sensor_entities_snapshot(
         # # Only entities from this config entry
         if not ent or ent.config_entry_id != entry.entry_id:
             continue
-        states[entity_id] = hass.states.get(entity_id).as_dict()
+
+        state = hass.states.get(entity_id)
+        states[entity_id] = _stable_state_dict(state.as_dict())
+        # states[entity_id] = hass.states.get(entity_id).as_dict()
 
     # 4) Snapshot comparison
     assert states == snapshot
@@ -109,7 +119,7 @@ async def test_sensor_entity_properties(tfa_me_mock_coordinator) -> None:
     entity = TFAmeSensorEntity(
         coordinator=tfa_me_mock_coordinator,
         sensor_id="a01234567",
-        entity_id="sensor.017654321_a01234567_temperature",
+        unique_id="sensor.017654321_a01234567_temperature",
     )
 
     # Test: unique_id, name, measurement_name, native_value (float), unit
@@ -123,7 +133,7 @@ async def test_sensor_entity_properties(tfa_me_mock_coordinator) -> None:
     entity6 = TFAmeSensorEntity(
         coordinator=tfa_me_mock_coordinator,
         sensor_id="057654321",
-        entity_id="sensor.017654321_a057654321_barometric_pressure",
+        unique_id="sensor.017654321_a057654321_barometric_pressure",
     )
     assert float(entity6.native_value) == 1000.1
     # Test: Nnit None
@@ -137,7 +147,7 @@ async def test_sensor_entity_properties(tfa_me_mock_coordinator) -> None:
     entity7 = TFAmeSensorEntity(
         coordinator=tfa_me_mock_coordinator,
         sensor_id="057654322",
-        entity_id="sensor.017654321_a057654322_barometric_pressure",
+        unique_id="sensor.017654321_a057654322_barometric_pressure",
     )
     attrs = entity7.extra_state_attributes
     assert attrs == {}
@@ -149,7 +159,7 @@ async def test_rain_sensor_entities(tfa_me_mock_coordinator) -> None:
     entity3 = TFAmeSensorEntity(
         coordinator=tfa_me_mock_coordinator,
         sensor_id="a1fffffea",
-        entity_id="sensor.017654321_a1fffffea_rain_rel",
+        unique_id="sensor.017654321_a1fffffea_rain_rel",
     )
     assert float(entity3.init_measure_value) == 7.4
     assert float(entity3.native_value) == 0.0
@@ -158,7 +168,7 @@ async def test_rain_sensor_entities(tfa_me_mock_coordinator) -> None:
     entity4 = TFAmeSensorEntity(
         coordinator=tfa_me_mock_coordinator,
         sensor_id="a1fffffea",
-        entity_id="sensor.017654321_a1fffffea_rain_hour",
+        unique_id="sensor.017654321_a1fffffea_rain_hour",
     )
     assert float(entity4.init_measure_value) == 7.4
     assert entity4.rain_history.max_age == 60 * 60
@@ -168,7 +178,7 @@ async def test_rain_sensor_entities(tfa_me_mock_coordinator) -> None:
     entity_24 = TFAmeSensorEntity(
         coordinator=tfa_me_mock_coordinator,
         sensor_id="a1fffffec",
-        entity_id="sensor.017654321_a1fffffec_rain_24hours",
+        unique_id="sensor.017654321_a1fffffec_rain_24hours",
     )
     assert float(entity_24.init_measure_value) == 7.4
     assert entity_24.rain_history_24.max_age == (24 * 60 * 60)
@@ -178,7 +188,7 @@ async def test_rain_sensor_entities(tfa_me_mock_coordinator) -> None:
     entity5 = TFAmeSensorEntity(
         coordinator=tfa_me_mock_coordinator,
         sensor_id="a1fffffea",
-        entity_id="sensor.017654321_a1fffffea_rain_24hours",
+        unique_id="sensor.017654321_a1fffffea_rain_24hours",
     )
     assert float(entity5.init_measure_value) == 7.4
     assert float(entity5.native_value) == 0.0
@@ -189,7 +199,7 @@ async def test_wind_sensor(tfa_me_mock_coordinator) -> None:
     entity = TFAmeSensorEntity(
         coordinator=tfa_me_mock_coordinator,
         sensor_id="a2ffffffb",
-        entity_id="sensor.017654321_a2ffffffb_wind_direction_deg",
+        unique_id="sensor.017654321_a2ffffffb_wind_direction_deg",
     )
     assert entity.native_value == 180.0
 
@@ -197,7 +207,7 @@ async def test_wind_sensor(tfa_me_mock_coordinator) -> None:
     entity_3 = TFAmeSensorEntity(
         coordinator=tfa_me_mock_coordinator,
         sensor_id="a2ffffffc",
-        entity_id="sensor.017654321_a2ffffffc_wind_direction_deg",
+        unique_id="sensor.017654321_a2ffffffc_wind_direction_deg",
     )
     assert entity_3.native_value is None
 
@@ -205,7 +215,7 @@ async def test_wind_sensor(tfa_me_mock_coordinator) -> None:
     entity_4 = TFAmeSensorEntity(
         coordinator=tfa_me_mock_coordinator,
         sensor_id="a2ffffffc",
-        entity_id="sensor.017654321_a2ffffffc_rssi",
+        unique_id="sensor.017654321_a2ffffffc_rssi",
     )
     assert entity_4.native_value is None
     # Test: Wrong ID
@@ -319,7 +329,7 @@ async def test_async_added_sets_initialized_and_writes_labels_if_missing(
     # Create entity
     tfa_me_mock_coordinator.name_with_station_id = True
     ent = TFAmeSensorEntity(
-        tfa_me_mock_coordinator, sensor_id="a0f169ad1", entity_id=unique_id
+        tfa_me_mock_coordinator, sensor_id="a0f169ad1", unique_id=unique_id
     )
     ent.hass = hass
     ent.entity_id = entity_id
@@ -358,7 +368,7 @@ async def test_async_added_does_not_overwrite_existing_labels(
     # Create entity
     tfa_me_mock_coordinator.name_with_station_id = True
     ent = TFAmeSensorEntity(
-        tfa_me_mock_coordinator, sensor_id="a0f169ad1", entity_id=unique_id
+        tfa_me_mock_coordinator, sensor_id="a0f169ad1", unique_id=unique_id
     )
     ent.hass = hass
     ent.entity_id = entity_id
@@ -445,7 +455,7 @@ def test_handle_coordinator_update(
 
         # Instantiate entity
         ent = TFAmeSensorEntity(
-            tfa_me_mock_coordinator, sensor_id="a1f169ad1", entity_id=uid
+            tfa_me_mock_coordinator, sensor_id="a1f169ad1", unique_id=uid
         )
         ent.hass = hass
 
@@ -486,7 +496,7 @@ async def test_measurement_name_keyerror(
     ent = TFAmeSensorEntity(
         tfa_me_mock_coordinator,
         sensor_id="a0f169ad1",
-        entity_id=uid,
+        unique_id=uid,
     )
     ent.hass = hass
 
@@ -512,7 +522,7 @@ def test_get_translation_key(
     ent = TFAmeSensorEntity(
         tfa_me_mock_coordinator,
         sensor_id="a0f169ad1",
-        entity_id="sensor.017654321_a0f169ad1_test",
+        unique_id="sensor.017654321_a0f169ad1_test",
     )
 
     result = ent._get_translation_key(measurement)
@@ -528,7 +538,7 @@ def test_native_value_generic_fallback(
     uid = "sensor.017654321_a01234567_temperature"
     # Create entity
     ent = TFAmeSensorEntity(
-        tfa_me_mock_coordinator, sensor_id="a01234567", entity_id=uid
+        tfa_me_mock_coordinator, sensor_id="a01234567", unique_id=uid
     )
     ent.hass = hass
 

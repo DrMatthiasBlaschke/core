@@ -42,10 +42,10 @@ async def test_full_entry_setup(hass: HomeAssistant) -> None:
 
     # Now state is LOADED
     assert mock_config_entry.state.name == "LOADED"
-    assert mock_config_entry.entry_id in hass.data[DOMAIN]
+    # assert mock_config_entry.entry_id in hass.data[DOMAIN]
 
     # Asserts
-    coordinator = hass.data[DOMAIN][mock_config_entry.entry_id]
+    coordinator = mock_config_entry.runtime_data
     assert coordinator.host == "127.0.0.1"
 
 

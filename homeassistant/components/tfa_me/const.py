@@ -73,3 +73,21 @@ TIMEOUT_MAPPING = {
     "A5": TIMEOUT_FOR_5_MIN,  # Sensor A5: T
     "A6": TIMEOUT_FOR_1_MIN,  # Sensor Prof. A6: T/H
 }
+
+# Valid JSON keys
+VALID_JSON_KEYS = [
+    "temperature",
+    "temperature_probe",
+    "humidity",
+    "co2",
+    "barometric_pressure",
+    "rssi",
+    "lowbatt",
+    "wind_direction",
+    "wind_speed",
+    "wind_gust",
+    "rain",
+]
+
+# Rain sub keys
+RAIN_KEYS = ("_rain_hour", "_rain_24hours")

@@ -4,7 +4,7 @@ from collections.abc import Callable
 from dataclasses import dataclass
 from datetime import datetime
 import logging
-from typing import Any
+from typing import Any, cast
 
 from tfa_me_ha_local.history import SensorHistory
 
@@ -76,7 +76,7 @@ TFA_ME_ENTITY_DESCRIPTIONS: dict[str, TFAmeSensorEntityDescription] = {
     ),
     "temperature_probe": TFAmeSensorEntityDescription(
         key="temperature_probe",
-        translation_key="temperature",
+        translation_key="temperature_probe",
         device_class=SensorDeviceClass.TEMPERATURE,
         state_class=SensorStateClass.MEASUREMENT,
         suggested_display_precision=1,
@@ -118,7 +118,8 @@ TFA_ME_ENTITY_DESCRIPTIONS: dict[str, TFAmeSensorEntityDescription] = {
         suggested_display_precision=0,
         value_fn=lambda entity, data: int(data["value"]),
     ),
-    # Low battery warning: 0 = OK, 1 = low (warning)
+    # Low battery warning states: 0 = OK, 1 = low (warning), 2 = critical low (urgent warning)
+    # 3 = battery missing/removed (Remark: some sensor have more then one power supply)
     "lowbatt": TFAmeSensorEntityDescription(
         key="lowbatt",
         translation_key="lowbatt",
@@ -212,7 +213,7 @@ async def async_setup_entry(
     """Set up TFA.me as Sensor."""
 
     # Get coordinator
-    coordinator = hass.data.setdefault(DOMAIN, {})[entry.entry_id]
+    coordinator = entry.runtime_data
     # Initialize first refresh/request and wait for parsed JSON data from coordinator
     sensors_start = []
     for unique_id in coordinator.data:
@@ -236,22 +237,19 @@ class TFAmeSensorEntity(CoordinatorEntity, SensorEntity):
         self,
         coordinator: TFAmeDataCoordinator,
         sensor_id: str,
-        entity_id: str,
+        unique_id: str,
     ) -> None:
         """Initialize sensor entity."""
         try:
             super().__init__(coordinator)
             self._initialized_once = False
             self.coordinator = coordinator
-            self._attr_unique_id = (
-                entity_id  # Unique ID (sets unique_id), will never be changed
-            )
+            self._attr_unique_id = unique_id  # Unique ID (sets unique_id), will never be changed name schema "StationID_SensorID_MeasurementValue"
             self.host = coordinator.host
             self.name_with_station_id = coordinator.name_with_station_id
-            self.entity_id = entity_id  # User can edit this entity ID
-            self.uid: str = entity_id
+            self.entity_id = unique_id  # User can edit this entity ID
+            self.uid: str = unique_id
             self.gateway_id = self.coordinator.data[self.uid]["gateway_id"]
-
             self.sensor_id = sensor_id
             label = (
                 f"via {self.gateway_id}" if getattr(self, "gateway_id", None) else "via"
@@ -290,20 +288,14 @@ class TFAmeSensorEntity(CoordinatorEntity, SensorEntity):
                     f"http://{coordinator.host}/ha_menu"
                 )
 
-            # Add icon for measurement
+            # Add init value & description
             self.init_measure_value: float = 0
             self.measure_name = self.coordinator.data[self.uid]["measurement"]
             self.init_measure_value = self.coordinator.data[self.uid]["value"]
-
-            description = TFA_ME_ENTITY_DESCRIPTIONS.get(self.measure_name)
-            if description is not None:
-                self.entity_description = description
-                # Set icon translations for entity, MDI icon: https://pictogrammers.com/library/mdi/
-                self._attr_translation_key = description.translation_key
-                # state_class/device_class/ come from entity_description
-            else:
-                # Fallback for unknown measurements
-                self._attr_translation_key = None
+            self.entity_description = cast(
+                TFAmeSensorEntityDescription,
+                TFA_ME_ENTITY_DESCRIPTIONS.get(self.measure_name),
+            )
 
         except (ValueError, TypeError, KeyError):
             return

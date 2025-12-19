@@ -19,7 +19,9 @@
         "default": "mdi:battery",
         "state": {
           "0": "mdi:battery",
-          "1": "mdi:battery-alert"
+          "1": "mdi:battery-alert",
+          "2": "mdi:battery-sync",
+          "3": "mdi:battery-off"
         }
       },
       "rain": {

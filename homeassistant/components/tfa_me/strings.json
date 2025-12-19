@@ -77,13 +77,14 @@
     "step": {
       "init": {
         "data": {
+          "action_rain": "Reset all rain sensors",
           "select_option": "Select an option:"
         },
         "data_description": {
           "select_option": "Select an option"
         },
-        "description": "Select a menu entry.",
-        "title": "Modify options, perform action"
+        "description": "Check box and press Submit to reset all rain last hour and rain last 24 hours rain values.",
+        "title": "Reset time-based rainfall amount"
       }
     }
   }
