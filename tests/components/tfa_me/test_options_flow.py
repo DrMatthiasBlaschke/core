@@ -34,7 +34,7 @@ async def test_options_flow_action_rain(
 
     # Update list and add coordinator to hass.data
     tfa_me_mock_coordinator.sensor_entity_list = [
-        "sensor.017654321_a1fffffea_rain_hour"
+        "sensor.017654321_a1fffffea_rain_1_hour"
     ]
 
     hass.data.setdefault(DOMAIN, {})[tfa_me_options_flow_mock_entry.entry_id] = (
@@ -59,7 +59,7 @@ async def test_options_flow_action_rain(
     # Assertions
     assert result["type"] == "create_entry"
     assert (
-        tfa_me_mock_coordinator.data["sensor.017654321_a1fffffea_rain_hour"][
+        tfa_me_mock_coordinator.data["sensor.017654321_a1fffffea_rain_1_hour"][
             "reset_rain"
         ]
         is True

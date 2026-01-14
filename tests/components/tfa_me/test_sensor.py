@@ -133,10 +133,11 @@ async def test_sensor_entity_properties(tfa_me_mock_coordinator) -> None:
     entity6 = TFAmeSensorEntity(
         coordinator=tfa_me_mock_coordinator,
         sensor_id="057654321",
-        unique_id="sensor.017654321_a057654321_barometric_pressure",
+        unique_id="sensor.017654321_017654321_barometric_pressure",
     )
     assert float(entity6.native_value) == 1000.1
-    # Test: Nnit None
+
+    # Test: Unit None
     tfa_me_mock_coordinator.data[entity.entity_id]["unit"] = None
     assert entity.native_unit_of_measurement is None
     # Test: Remove unit
@@ -168,7 +169,7 @@ async def test_rain_sensor_entities(tfa_me_mock_coordinator) -> None:
     entity4 = TFAmeSensorEntity(
         coordinator=tfa_me_mock_coordinator,
         sensor_id="a1fffffea",
-        unique_id="sensor.017654321_a1fffffea_rain_hour",
+        unique_id="sensor.017654321_a1fffffea_rain_1_hour",
     )
     assert float(entity4.init_measure_value) == 7.4
     assert entity4.rain_history.max_age == 60 * 60
@@ -178,7 +179,7 @@ async def test_rain_sensor_entities(tfa_me_mock_coordinator) -> None:
     entity_24 = TFAmeSensorEntity(
         coordinator=tfa_me_mock_coordinator,
         sensor_id="a1fffffec",
-        unique_id="sensor.017654321_a1fffffec_rain_24hours",
+        unique_id="sensor.017654321_a1fffffec_rain_24_hours",
     )
     assert float(entity_24.init_measure_value) == 7.4
     assert entity_24.rain_history_24.max_age == (24 * 60 * 60)
@@ -188,7 +189,7 @@ async def test_rain_sensor_entities(tfa_me_mock_coordinator) -> None:
     entity5 = TFAmeSensorEntity(
         coordinator=tfa_me_mock_coordinator,
         sensor_id="a1fffffea",
-        unique_id="sensor.017654321_a1fffffea_rain_24hours",
+        unique_id="sensor.017654321_a1fffffea_rain_24_hours",
     )
     assert float(entity5.init_measure_value) == 7.4
     assert float(entity5.native_value) == 0.0
@@ -407,14 +408,14 @@ async def test_async_added_returns_if_no_registry_entry(
 @pytest.mark.parametrize(
     ("uid_suffix", "measurement", "raw_value", "expect_add"),
     [
-        # rain_hour: valid -> add_measurement expected
-        ("rain_hour", "rain_1_hour", "2.5", True),
-        # rain_hour: error -> add_measurement NOT expected
-        ("rain_hour", "rain_1_hour", "NOT_A_FLOAT", False),
-        # rain_24hours: valid -> add_measurement expected
-        ("rain_24hours", "rain_24_hours", "10.0", True),
-        # rain_24hours: error -> add_measurement NOT expected
-        ("rain_24hours", "rain_24_hours", "WRONG", False),
+        # rain_1_hour: valid -> add_measurement expected
+        ("rain_1_hour", "rain_1_hour", "2.5", True),
+        # rain_1_hour: error -> add_measurement NOT expected
+        ("rain_1_hour", "rain_1_hour", "NOT_A_FLOAT", False),
+        # rain_24_hours: valid -> add_measurement expected
+        ("rain_24_hours", "rain_24_hours", "10.0", True),
+        # rain_24_hours: error -> add_measurement NOT expected
+        ("rain_24_hours", "rain_24_hours", "WRONG", False),
     ],
 )
 def test_handle_coordinator_update(
@@ -483,20 +484,10 @@ async def test_measurement_name_keyerror(
 ) -> None:
     """Test measurement_name returns None when KeyError occurs."""
 
-    uid = "sensor.017654321_a0f169ad1_temperature"
-
-    # minimal example coordinator data
-    tfa_me_mock_coordinator.data = {
-        uid: {
-            "sensor_id": "a0f169ad1",
-            # "measurement": "temperature",   <-- intentionally removed
-        }
-    }
-
     ent = TFAmeSensorEntity(
         tfa_me_mock_coordinator,
         sensor_id="a0f169ad1",
-        unique_id=uid,
+        unique_id=None,  # uid, set invalid ID
     )
     ent.hass = hass
 

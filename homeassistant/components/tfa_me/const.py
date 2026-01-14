@@ -19,8 +19,8 @@ MEASUREMENT_TO_TRANSLATION_KEY = {
     "wind_gust": "wind_gust",
     "rain": "rain",
     "rain_rel": "rain_relative",
-    "rain_hour": "rain_1_hour",
-    "rain_24hours": "rain_24_hours",
+    "rain_1_hour": "rain_1_hour",
+    "rain_24_hours": "rain_24_hours",
 }
 
 # Short description of all stations & sensors
@@ -90,4 +90,4 @@ VALID_JSON_KEYS = [
 ]
 
 # Rain sub keys
-RAIN_KEYS = ("_rain_hour", "_rain_24hours")
+RAIN_KEYS = ("_rain_1_hour", "_rain_24_hours")

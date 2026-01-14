@@ -44,7 +44,6 @@ def tfa_me_mock_entry(hass: HomeAssistant, tfa_me_mock_coordinator):
     entry = AsyncMock()
     entry.entry_id = "1234"
     entry.runtime_data = tfa_me_mock_coordinator
-    # hass.data.setdefault(DOMAIN, {})[entry.entry_id] = tfa_me_mock_coordinator
     return entry
 
 
@@ -74,121 +73,74 @@ def tfa_me_mock_coordinator():
     coordinator.name_with_station_id = False
     coordinator.sensor_entity_list = []
     now = datetime.now().timestamp()
+    coordinator.gateway_id = "017654321"
     # Some entities used for 100% test coverage
     coordinator.data = {
         "sensor.017654321_a01234567_temperature": {
-            "sensor_id": "a01234567",
-            "gateway_id": "017654321",
-            "sensor_name": "A01234567",
-            "measurement": "temperature",
             "value": "23.5",
             "unit": "°C",
             "ts": int(now),
         },
         "sensor.017654321_a2ffffffb_wind_direction": {
-            "sensor_id": "a2ffffffb",
-            "gateway_id": "017654321",
-            "sensor_name": "A2FFFFFFB",
-            "measurement": "wind_direction",
             "value": "8",
             "unit": "°",
             "ts": int(now),
         },
         "sensor.017654321_a2ffffffb_wind_direction_deg": {
-            "sensor_id": "a2ffffffb",
-            "gateway_id": "017654321",
-            "sensor_name": "A2FFFFFFB",
-            "measurement": "wind_direction_deg",
             "value": "8",
             "unit": "°",
             "ts": int(now),
         },
         "sensor.017654321_a2ffffffc_wind_direction_deg": {
-            "sensor_id": "a2ffffffc",
-            "gateway_id": "017654321",
-            "sensor_name": "A2FFFFFFC",
-            "measurement": "wind_direction_deg",
             "value": "xxx",  # Set to invalid value
             "unit": "°",
             "ts": int(now),
         },
         "sensor.017654321_a2ffffffc_rssi": {
-            "sensor_id": "a2ffffffb",
-            "gateway_id": "017654321",
-            "sensor_name": "A2FFFFFFB",
-            "measurement": "rssi",
             "value": "222",
             "unit": "/255",
             "ts": int(now) - 1000000,  # Set to old value
         },
         "sensor.017654321_a1fffffea_rain": {
-            "sensor_id": "a1fffffea",
-            "gateway_id": "017654321",
-            "sensor_name": "A1FFFFFEA",
-            "measurement": "rain_1_hour",
             "value": "7.4",
             "unit": "mm",
             "ts": int(now),
             "reset_rain": False,
         },
         "sensor.017654321_a1fffffea_rain_rel": {
-            "sensor_id": "a1fffffea",
-            "gateway_id": "017654321",
-            "sensor_name": "A1FFFFFEA",
-            "measurement": "rain_1_hour",
             "value": "7.4",
             "unit": "mm",
             "ts": int(now),
             "reset_rain": True,
         },
-        "sensor.017654321_a1fffffea_rain_hour": {
-            "sensor_id": "a1fffffea",
-            "gateway_id": "017654321",
-            "sensor_name": "A1FFFFFEA",
-            "measurement": "rain_1_hour",
+        "sensor.017654321_a1fffffea_rain_1_hour": {
+            "value": "7.4",
+            "unit": "mm",
+            "ts": int(now) - 60,
+            "reset_rain": True,
+        },
+        "sensor.017654321_a1fffffec_rain_24_hours": {
             "value": "7.4",
             "unit": "mm",
             "ts": int(now) - 60,
             "reset_rain": False,
         },
-        "sensor.017654321_a1fffffec_rain_24hours": {
-            "sensor_id": "a1fffffec",
-            "gateway_id": "017654321",
-            "sensor_name": "A1FFFFFEC",
-            "measurement": "rain_24_hours",
-            "value": "7.4",
-            "unit": "mm",
-            "ts": int(now) - 60,
-            "reset_rain": False,
-        },
-        "sensor.017654321_a1fffffea_rain_24hours": {
-            "sensor_id": "a1fffffea",
-            "gateway_id": "017654321",
-            "sensor_name": "A1FFFFFEA",
-            "measurement": "rain_24_hours",
+        "sensor.017654321_a1fffffea_rain_24_hours": {
             "value": "7.4",
             "unit": "mm",
             "ts": int(now),
             "reset_rain": True,
         },
-        "sensor.017654321_a057654321_barometric_pressure": {
-            "sensor_id": "057654321",
-            "gateway_id": "057654321",
-            "sensor_name": "057654321",
-            "measurement": "barometric_pressure",
+        "sensor.017654321_017654321_barometric_pressure": {
             "value": "1000.1",
             "unit": "hPa",
             "ts": int(now),
             "info": "",
         },
-        "sensor.017654321_a057654322_barometric_pressure": {
-            "sensor_id": "057654322",
-            "gateway_id": "057654322",
-            "sensor_name": "057654322",
+        "sensor.017654321_017654322_barometric_pressure": {
             "value": "1000.1",
             "unit": "hPa",
             "ts": int(now),
-            # "measurement" missing
         },
     }
 

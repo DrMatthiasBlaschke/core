@@ -2,7 +2,7 @@
 
 from collections.abc import Callable
 from dataclasses import dataclass
-from datetime import datetime
+from datetime import UTC, datetime
 import logging
 from typing import Any, cast
 
@@ -65,7 +65,7 @@ def _calc_rain_last_24h(entity: "TFAmeSensorEntity", data: dict[str, Any]) -> fl
 
 # All TFA.me entity descriptions
 TFA_ME_ENTITY_DESCRIPTIONS: dict[str, TFAmeSensorEntityDescription] = {
-    # Temperature & temperature probe
+    # Temperature
     "temperature": TFAmeSensorEntityDescription(
         key="temperature",
         translation_key="temperature",
@@ -74,6 +74,7 @@ TFA_ME_ENTITY_DESCRIPTIONS: dict[str, TFAmeSensorEntityDescription] = {
         suggested_display_precision=1,
         value_fn=lambda entity, data: float(data["value"]),
     ),
+    # Temperature probe
     "temperature_probe": TFAmeSensorEntityDescription(
         key="temperature_probe",
         translation_key="temperature_probe",
@@ -173,7 +174,7 @@ TFA_ME_ENTITY_DESCRIPTIONS: dict[str, TFAmeSensorEntityDescription] = {
         value_fn=lambda entity, data: float(data["value"]),
     ),
     # Relative rainfall (since last reset / HA start)
-    "rain_relative": TFAmeSensorEntityDescription(
+    "rain_rel": TFAmeSensorEntityDescription(
         key="rain_relative",
         translation_key="rain_relative",
         device_class=SensorDeviceClass.PRECIPITATION,
@@ -217,7 +218,7 @@ async def async_setup_entry(
     # Initialize first refresh/request and wait for parsed JSON data from coordinator
     sensors_start = []
     for unique_id in coordinator.data:
-        sensor_id = coordinator.data[unique_id]["sensor_id"]
+        sensor_id = unique_id[17:26]  # sensor ID
         if unique_id not in coordinator.sensor_entity_list:
             sensors_start.append(TFAmeSensorEntity(coordinator, sensor_id, unique_id))
             coordinator.sensor_entity_list.append(unique_id)
@@ -244,16 +245,14 @@ class TFAmeSensorEntity(CoordinatorEntity, SensorEntity):
             super().__init__(coordinator)
             self._initialized_once = False
             self.coordinator = coordinator
-            self._attr_unique_id = unique_id  # Unique ID (sets unique_id), will never be changed name schema "StationID_SensorID_MeasurementValue"
+            self._attr_unique_id = unique_id  # Unique ID (sets unique_id), will never be changed, name schema "StationID_SensorID_MeasurementValue"
             self.host = coordinator.host
             self.name_with_station_id = coordinator.name_with_station_id
             self.entity_id = unique_id  # User can edit this entity ID
             self.uid: str = unique_id
-            self.gateway_id = self.coordinator.data[self.uid]["gateway_id"]
+            self.gateway_id = self.coordinator.gateway_id
             self.sensor_id = sensor_id
-            label = (
-                f"via {self.gateway_id}" if getattr(self, "gateway_id", None) else "via"
-            )
+            label = f"via {self.gateway_id}"
             self._attr_labels: list[str] = [label]
             self._attr_icon = ""
             ids_str = f"{sensor_id}_{self.gateway_id}"
@@ -273,7 +272,7 @@ class TFAmeSensorEntity(CoordinatorEntity, SensorEntity):
                 ),  # 'Sensor/Station type XX'
             }
 
-            self.measure_name = self.coordinator.data[self.uid]["measurement"]
+            self.measure_name = self.uid[27:]
             # Some rain specials
             if self.measure_name == "rain_1_hour":
                 self.rain_history = SensorHistory(max_age_minutes=60)
@@ -281,7 +280,7 @@ class TFAmeSensorEntity(CoordinatorEntity, SensorEntity):
             if self.measure_name == "rain_24_hours":
                 self.rain_history_24 = SensorHistory(max_age_minutes=24 * 60)
 
-            # If this is a station add URL to station
+            # If this is a station add URL to station main menu
             hex_value = int(sensor_id[:2], 16)
             if hex_value < 160:
                 self._attr_device_info["configuration_url"] = (
@@ -290,7 +289,6 @@ class TFAmeSensorEntity(CoordinatorEntity, SensorEntity):
 
             # Add init value & description
             self.init_measure_value: float = 0
-            self.measure_name = self.coordinator.data[self.uid]["measurement"]
             self.init_measure_value = self.coordinator.data[self.uid]["value"]
             self.entity_description = cast(
                 TFAmeSensorEntityDescription,
@@ -328,7 +326,7 @@ class TFAmeSensorEntity(CoordinatorEntity, SensorEntity):
     def _handle_coordinator_update(self) -> None:
         """Called when coordinator has new data, used to update rain histories."""
 
-        if "rain_hour" in self.uid:
+        if "rain_1_hour" in self.uid:
             try:
                 value = float(self.coordinator.data[self.uid]["value"])
                 ts = self.coordinator.data[self.uid]["ts"]
@@ -337,7 +335,7 @@ class TFAmeSensorEntity(CoordinatorEntity, SensorEntity):
             except (ValueError, TypeError, KeyError):
                 value = 0
 
-        if "rain_24hours" in self.uid:
+        if "rain_24_hours" in self.uid:
             try:
                 value = float(self.coordinator.data[self.uid]["value"])
                 ts = self.coordinator.data[self.uid]["ts"]
@@ -371,7 +369,7 @@ class TFAmeSensorEntity(CoordinatorEntity, SensorEntity):
     def measurement_name(self):
         """Name of measurement, e.g. 'temperature', 'humidity'."""
         try:
-            measurement_name = self.coordinator.data[self.uid]["measurement"]
+            measurement_name = self.uid[27:]  # measurement type
         except (ValueError, TypeError, KeyError):
             return None
 
@@ -417,10 +415,14 @@ class TFAmeSensorEntity(CoordinatorEntity, SensorEntity):
 
         try:
             sensor_data = self.coordinator.data[self.uid]
+            dt = datetime.fromtimestamp(
+                int(sensor_data["ts"]), tz=UTC
+            )  # ISO-8601-UTC format
+
             return {
-                "sensor_name": sensor_data["sensor_name"],
-                "measurement": sensor_data["measurement"],
-                "timestamp": sensor_data["timestamp"],
+                "sensor_name": self.uid[17:26].upper(),  # sensor name
+                "measurement": self.uid[27:],  # measurement type
+                "timestamp": dt,
                 "icon": self._attr_icon,
                 "Via TFA.me station": self.gateway_id.upper(),
             }

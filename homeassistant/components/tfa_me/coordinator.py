@@ -1,6 +1,5 @@
 """TFA.me station integration: coordinator.py."""
 
-from datetime import datetime
 import logging
 from typing import Any
 
@@ -142,64 +141,51 @@ class TFAmeDataCoordinator(DataUpdateCoordinator):
             # Get gateway ID
             gateway_id: str = json_data.get("gateway_id", "tfame")
             gateway_id = gateway_id.lower()
-            self.gateway_id = gateway_id
-            # Fallback time if "timestamp" is missing
-            formatted_time_str = datetime.now().replace(microsecond=0).isoformat() + "Z"
+            self.gateway_id = gateway_id  # Gateway/station ID
 
             for sensor in json_data.get("sensors", []):
                 sensor_id = sensor["sensor_id"]
 
                 for m_name, values in sensor.get("measurements", {}).items():
                     if measuerment_in_list(m_name, VALID_JSON_KEYS):
+                        # Unique ID build of "unique station/gateway ID" & "unique sensor ID"  & measurement name
+                        # (IDs set while production process)
                         unique_id = f"sensor.{gateway_id}_{sensor_id}_{m_name}"
 
-                        # Base data for all entities
+                        # Minimum base data for all entities: value, unit, ts (timestamp)
                         base = {
-                            "sensor_id": sensor_id,
-                            "gateway_id": gateway_id,
-                            "sensor_name": sensor["name"],
-                            "measurement": m_name,
-                            "value": values["value"],
-                            "unit": values["unit"],
-                            "timestamp": sensor.get("timestamp", formatted_time_str),
-                            "ts": sensor["ts"],
+                            "value": values["value"],  # Measurement value
+                            "unit": values["unit"],  # Measurement unit
+                            "ts": sensor["ts"],  # UTC reception time stamp in seconds
                         }
                         parsed_data[unique_id] = base
 
                         # Special cases
-                        # Low battery: remove unit
-                        if m_name == "lowbatt":
-                            parsed_data[unique_id]["unit"] = ""
-
                         # Wind direction: create extra entity for degrees
                         if m_name == "wind_direction":
                             deg_id = f"{unique_id}_deg"
                             parsed_data[deg_id] = {
                                 **base,
-                                "measurement": "wind_direction_deg",
                                 "unit": "°",
                             }
 
-                        # Rain: relative, 1 hour, 24 hours
+                        # Rain: create extra entity relative, 1 hour, 24 hours
                         if m_name == "rain":
                             # relative
                             parsed_data[f"{unique_id}_rel"] = {
                                 **base,
-                                "measurement": "rain_relative",
                                 "reset_rain": False,
                             }
 
-                            # 1-hour rain
-                            parsed_data[f"{unique_id}_hour"] = {
+                            # 1 hour rain
+                            parsed_data[f"{unique_id}_1_hour"] = {
                                 **base,
-                                "measurement": "rain_1_hour",
                                 "reset_rain": False,
                             }
 
                             # 24 hours rain
-                            parsed_data[f"{unique_id}_24hours"] = {
+                            parsed_data[f"{unique_id}_24_hours"] = {
                                 **base,
-                                "measurement": "rain_24_hours",
                                 "reset_rain": False,
                             }
 
