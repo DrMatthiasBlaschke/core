@@ -34,6 +34,7 @@ DEVICE_MAPPING = {
     "06": "Station 06: T/H",
     "07": "Station 07: T/H",
     "08": "Station 08: T/H",
+    "09": "Station 09: T/H",
     # Debug station ID
     "99": "Station 99: T/H/BP/CO2",
     # Sensors
@@ -62,6 +63,7 @@ TIMEOUT_MAPPING = {
     "06": TIMEOUT_FOR_5_MIN,
     "07": TIMEOUT_FOR_5_MIN,
     "08": TIMEOUT_FOR_5_MIN,
+    "09": TIMEOUT_FOR_5_MIN,
     # Debug station ID
     "99": TIMEOUT_FOR_5_MIN,
     # Sensors

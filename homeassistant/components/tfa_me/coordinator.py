@@ -45,6 +45,7 @@ class TFAmeDataCoordinator(DataUpdateCoordinator):
             name_with_station_id  # from config_entry.data[CONF_NAME_WITH_STATION_ID]
         )
         self.gateway_id = ""
+        self.gateway_sw = ""
 
         # Resolve host only once for client construction:
         resolved_host = resolve_tfa_host(host)
@@ -142,6 +143,7 @@ class TFAmeDataCoordinator(DataUpdateCoordinator):
             gateway_id: str = json_data.get("gateway_id", "tfame")
             gateway_id = gateway_id.lower()
             self.gateway_id = gateway_id  # Gateway/station ID
+            self.gateway_sw = json_data.get("gateway_sw", "?")
 
             for sensor in json_data.get("sensors", []):
                 sensor_id = sensor["sensor_id"]

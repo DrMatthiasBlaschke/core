@@ -16,7 +16,6 @@ from homeassistant.components.sensor import (
     StateType,
 )
 from homeassistant.core import HomeAssistant
-from homeassistant.helpers import entity_registry as er
 from homeassistant.helpers.entity_platform import AddConfigEntryEntitiesCallback
 from homeassistant.helpers.update_coordinator import CoordinatorEntity
 
@@ -26,7 +25,7 @@ from .const import (
     MEASUREMENT_TO_TRANSLATION_KEY,
     TIMEOUT_MAPPING,
 )
-from .coordinator import TFAmeConfigEntry, TFAmeDataCoordinator
+from .coordinator import TFAmeConfigEntry, TFAmeDataCoordinator, resolve_tfa_host
 
 PARALLEL_UPDATES = 1
 
@@ -37,7 +36,7 @@ _LOGGER = logging.getLogger(__name__)
 class TFAmeSensorEntityDescription(SensorEntityDescription):
     """Entity description for TFA.me sensor entity."""
 
-    # value_fn gets entity and th raw data dict (coordinator.data[self.uid])
+    # value_fn gets entity and the raw data dict (coordinator.data[self.uid])
     value_fn: Callable[["TFAmeSensorEntity", dict[str, Any]], StateType] | None = None
 
 
@@ -105,7 +104,7 @@ TFA_ME_ENTITY_DESCRIPTIONS: dict[str, TFAmeSensorEntityDescription] = {
     "barometric_pressure": TFAmeSensorEntityDescription(
         key="barometric_pressure",
         translation_key="barometric_pressure",
-        device_class=SensorDeviceClass.PRESSURE,  # or ATMOSPHERIC_PRESSURE ?
+        device_class=SensorDeviceClass.ATMOSPHERIC_PRESSURE,
         state_class=SensorStateClass.MEASUREMENT,
         suggested_display_precision=1,
         value_fn=lambda entity, data: float(data["value"]),
@@ -141,6 +140,7 @@ TFA_ME_ENTITY_DESCRIPTIONS: dict[str, TFAmeSensorEntityDescription] = {
         translation_key="wind_direction",
         device_class=None,
         state_class=SensorStateClass.MEASUREMENT,
+        suggested_display_precision=1,
         value_fn=lambda entity, data: round(
             float(entity.coordinator.data[entity.uid.replace("_deg", "")]["value"])
             * (360.0 / 16.0),
@@ -252,8 +252,6 @@ class TFAmeSensorEntity(CoordinatorEntity, SensorEntity):
             self.uid: str = unique_id
             self.gateway_id = self.coordinator.gateway_id
             self.sensor_id = sensor_id
-            label = f"via {self.gateway_id}"
-            self._attr_labels: list[str] = [label]
             self._attr_icon = ""
             ids_str = f"{sensor_id}_{self.gateway_id}"
             self._attr_device_info = {
@@ -280,11 +278,21 @@ class TFAmeSensorEntity(CoordinatorEntity, SensorEntity):
             if self.measure_name == "rain_24_hours":
                 self.rain_history_24 = SensorHistory(max_age_minutes=24 * 60)
 
-            # If this is a station add URL to station main menu
-            hex_value = int(sensor_id[:2], 16)
+            # Depending on station or sensor add additional information
+            hex_value = int(sensor_id[:2], 16)  # This is the device type
             if hex_value < 160:
+                # Station: add URL to station main menu, SW version & serial
+                host_resolved = resolve_tfa_host(coordinator.host)
                 self._attr_device_info["configuration_url"] = (
-                    f"http://{coordinator.host}/ha_menu"
+                    f"http://{host_resolved}/ha_menu"
+                )
+                self._attr_device_info["sw_version"] = self.coordinator.gateway_sw
+                self._attr_device_info["serial_number"] = (
+                    self.format_string_tfa_id_only(self.gateway_id)
+                )
+            else:  # Sensor: add serial
+                self._attr_device_info["serial_number"] = (
+                    self.format_string_tfa_id_only(self.sensor_id)
                 )
 
             # Add init value & description
@@ -308,20 +316,6 @@ class TFAmeSensorEntity(CoordinatorEntity, SensorEntity):
         """Called once if entity is added to HA instance."""
         await super().async_added_to_hass()
         self._initialized_once = True
-
-        if self.name_with_station_id:
-            ent_reg = er.async_get(self.hass)
-            reg_entry = ent_reg.async_get(self.entity_id)
-            if not reg_entry:
-                return
-
-            # Set a label if not available in registry
-            if not reg_entry.labels:
-                # User labels are not overwritten
-                if self.entity_id:
-                    ent_reg.async_update_entity(
-                        self.entity_id, labels=set(self._attr_labels)
-                    )
 
     def _handle_coordinator_update(self) -> None:
         """Called when coordinator has new data, used to update rain histories."""
@@ -348,14 +342,18 @@ class TFAmeSensorEntity(CoordinatorEntity, SensorEntity):
         super()._handle_coordinator_update()
 
     def format_string_tfa_id(self, s: str, gw_id: str, name_with_station_id: bool):
-        """String helper for sensor names, convert string 'xxxxxxxxx' into 'TFA.me XXX-XXX-XXX'."""
+        """String helper for station & sensor names, convert string 'xxxxxxxxx' into 'TFA.me XXX-XXX-XXX'."""
         if name_with_station_id:
             return f"TFA.me {s[:3].upper()}-{s[3:6].upper()}-{s[6:].upper()} ({gw_id.upper()})"
 
         return f"TFA.me {s[:3].upper()}-{s[3:6].upper()}-{s[6:].upper()}"
 
+    def format_string_tfa_id_only(self, s: str):
+        """String helper for station & sensor names, convert string 'xxxxxxxxx' into 'XXX-XXX-XXX'."""
+        return f"{s[:3].upper()}-{s[3:6].upper()}-{s[6:].upper()}"
+
     def format_string_tfa_type(self, s: str):
-        """String helper for sensor/station types, convert serial string 'xxxxxxxxx' into 'Sensor/station type XX'."""
+        """String helper for sensor & station types, convert serial string 'xxxxxxxxx' into 'Sensor/Station type XX'."""
 
         type_id: str = (s[:2]).upper()
         info_str: str = "?"
@@ -411,7 +409,7 @@ class TFAmeSensorEntity(CoordinatorEntity, SensorEntity):
 
     @property
     def extra_state_attributes(self) -> dict[str, Any]:
-        """Extra attributes dictionary for an entity: sensor_name, measurement, timestamp, icon."""
+        """Extra attributes dictionary for an entity: sensor ID, measurement, timestamp, icon."""
 
         try:
             sensor_data = self.coordinator.data[self.uid]
@@ -420,11 +418,13 @@ class TFAmeSensorEntity(CoordinatorEntity, SensorEntity):
             )  # ISO-8601-UTC format
 
             return {
-                "sensor_name": self.uid[17:26].upper(),  # sensor name
-                "measurement": self.uid[27:],  # measurement type
-                "timestamp": dt,
+                "Unique ID": self.format_string_tfa_id_only(self.uid[17:26].upper()),
+                "Measurement": self.uid[27:],  # measurement type
+                "Timestamp": dt,
                 "icon": self._attr_icon,
-                "Via TFA.me station": self.gateway_id.upper(),
+                "Via TFA.me station": self.format_string_tfa_id_only(
+                    self.gateway_id.upper()
+                ),
             }
         except (ValueError, TypeError, KeyError):
             return {}
