@@ -53,7 +53,7 @@ class TFAmeDataCoordinator(DataUpdateCoordinator):
         # Create a single reusable TFA.me client
         session = async_get_clientsession(hass)
         self._client = TFAmeClient(
-            resolved_host, "sensors", log_level=1, session=session
+            resolved_host, "sensors", log_level=1, session=session, timeout=10
         )
 
         super().__init__(

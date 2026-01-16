@@ -74,6 +74,7 @@ def tfa_me_mock_coordinator():
     coordinator.sensor_entity_list = []
     now = datetime.now().timestamp()
     coordinator.gateway_id = "017654321"
+    coordinator.gateway_sw = "1.12345 / 1"
     # Some entities used for 100% test coverage
     coordinator.data = {
         "sensor.017654321_a01234567_temperature": {
