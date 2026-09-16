@@ -4,6 +4,7 @@ import logging
 from typing import Any, override
 
 from tfa_me_ha_local.client import (
+    TFAmeClient,
     TFAmeConnectionError,
     TFAmeException,
     TFAmeHTTPError,
@@ -15,43 +16,52 @@ import voluptuous as vol
 
 from homeassistant.config_entries import ConfigFlow, ConfigFlowResult
 from homeassistant.const import CONF_IP_ADDRESS
+from homeassistant.helpers.aiohttp_client import async_get_clientsession
 
 from .const import DEFAULT_STATION_NAME, DOMAIN
-from .data import TFAmeUniqueID
+from .helper import resolve_tfa_host
 
 _LOGGER = logging.getLogger(__name__)
 
+STEP_USER_DATA_SCHEMA = vol.Schema(
+    {
+        vol.Required(CONF_IP_ADDRESS, default=""): str,
+    }
+)
+
 
 class TFAmeConfigFlow(ConfigFlow, domain=DOMAIN):
-    """Handle the config flow for TFA.me stations."""
+    """Handle the config flow for TFA.me."""
 
     VERSION = 1
     MINOR_VERSION = 1
 
     @override
     async def async_step_user(
-        self, user_input: dict[str, Any] | None = None
+        self,
+        user_input: dict[str, Any] | None = None,
     ) -> ConfigFlowResult:
-        """Handle the initial step of the config flow."""
+        """Handle the initial step."""
         errors: dict[str, str] = {}
 
-        data_schema = vol.Schema(
-            {
-                vol.Required(CONF_IP_ADDRESS, default=""): str,
-            }
-        )
-
         if user_input is not None:
-            ip_host_str = user_input[CONF_IP_ADDRESS]
+            address = user_input[CONF_IP_ADDRESS]
             validator = TFAmeValidator()
 
-            if validator.is_valid_ip_or_tfa_me(ip_host_str):
-                title_str = f"{DEFAULT_STATION_NAME} '{ip_host_str.upper()}'"
+            if not validator.is_valid_ip_or_tfa_me(address):
+                errors[CONF_IP_ADDRESS] = "invalid_ip_host"
+            else:
+                host = resolve_tfa_host(address)
+                session = async_get_clientsession(self.hass)
+                client = TFAmeClient(
+                    host,
+                    "sensors",
+                    log_level=1,
+                    session=session,
+                )
 
                 try:
-                    data_helper = TFAmeUniqueID(self.hass, ip_host_str)
-                    identifier = await data_helper.get_identifier()
-
+                    json_data = await client.async_get_sensors()
                 except TFAmeTimeoutError:
                     errors["base"] = "timeout_connect"
                 except TFAmeConnectionError:
@@ -66,14 +76,23 @@ class TFAmeConfigFlow(ConfigFlow, domain=DOMAIN):
                     )
                     errors["base"] = "unknown"
                 else:
-                    await self.async_set_unique_id(identifier)
-                    self._abort_if_unique_id_configured(updates=user_input)
-                    return self.async_create_entry(title=title_str, data=user_input)
-            else:
-                errors[CONF_IP_ADDRESS] = "invalid_ip_host"
+                    identifier = json_data.get("gateway_id")
+
+                    if not isinstance(identifier, str) or not identifier:
+                        errors["base"] = "invalid_response"
+                    else:
+                        await self.async_set_unique_id(identifier)
+                        self._abort_if_unique_id_configured()
+
+                        title = f"{DEFAULT_STATION_NAME} '{address.upper()}'"
+
+                        return self.async_create_entry(
+                            title=title,
+                            data={CONF_IP_ADDRESS: host},
+                        )
 
         return self.async_show_form(
             step_id="user",
-            data_schema=data_schema,
+            data_schema=STEP_USER_DATA_SCHEMA,
             errors=errors,
         )

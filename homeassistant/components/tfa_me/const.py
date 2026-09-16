@@ -46,6 +46,7 @@ VALID_JSON_MEASUREMENT_KEYS = [
     "rssi",
     "lowbatt",
     "wind_direction",
+    "wind_direction_deg",
     "wind_speed",
     "wind_gust",
     "rain",

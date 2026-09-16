@@ -35,7 +35,13 @@
         "name": "Humidity"
       },
       "lowbatt": {
-        "name": "Low battery"
+        "name": "Battery status",
+        "state": {
+          "critical": "Critical",
+          "low": "Low",
+          "missing": "Missing/removed",
+          "ok": "OK"
+        }
       },
       "rain": {
         "name": "Rain"
@@ -59,7 +65,25 @@
         "name": "Temperature probe"
       },
       "wind_direction": {
-        "name": "Wind direction"
+        "name": "Wind direction",
+        "state": {
+          "e": "E",
+          "ene": "ENE",
+          "ese": "ESE",
+          "n": "N",
+          "ne": "NE",
+          "nne": "NNE",
+          "nnw": "NNW",
+          "nw": "NW",
+          "s": "S",
+          "se": "SE",
+          "sse": "SSE",
+          "ssw": "SSW",
+          "sw": "SW",
+          "w": "W",
+          "wnw": "WNW",
+          "wsw": "WSW"
+        }
       },
       "wind_direction_deg": {
         "name": "Wind direction (degrees)"

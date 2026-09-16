@@ -2,7 +2,6 @@
 
 from __future__ import annotations
 
-from collections.abc import Mapping
 from unittest.mock import patch
 
 import pytest
@@ -21,9 +20,6 @@ from homeassistant.core import HomeAssistant
 
 from tests.common import MockConfigEntry
 
-type PatchKwargs = Mapping[str, object] | None
-type UserInput = dict[str, object]
-
 
 async def test_show_form(hass: HomeAssistant) -> None:
     """Test that the flow starts with the user form."""
@@ -37,54 +33,30 @@ async def test_show_form(hass: HomeAssistant) -> None:
 
 
 @pytest.mark.parametrize(
-    (
-        "patch_target",
-        "patch_kwargs",
-        "initial_user_input",
-        "error_key",
-        "expected_error",
-    ),
+    ("exception", "expected_error"),
     [
         (
-            "homeassistant.components.tfa_me.config_flow.TFAmeUniqueID",
-            {"side_effect": TFAmeTimeoutError("timeout_connect")},
-            {CONF_IP_ADDRESS: "192.168.0.10"},
-            "base",
+            TFAmeTimeoutError("timeout"),
             "timeout_connect",
         ),
         (
-            "homeassistant.components.tfa_me.config_flow.TFAmeUniqueID",
-            {"side_effect": TFAmeConnectionError("cannot_connect")},
-            {CONF_IP_ADDRESS: "192.168.0.10"},
-            "base",
+            TFAmeConnectionError("connection error"),
             "cannot_connect",
         ),
         (
-            "homeassistant.components.tfa_me.config_flow.TFAmeUniqueID",
-            {"side_effect": TFAmeHTTPError("invalid_response")},
-            {CONF_IP_ADDRESS: "192.168.0.10"},
-            "base",
+            TFAmeHTTPError("HTTP error"),
             "invalid_response",
         ),
         (
-            "homeassistant.components.tfa_me.config_flow.TFAmeUniqueID",
-            {"side_effect": TFAmeJSONError("invalid_response")},
-            {CONF_IP_ADDRESS: "192.168.0.10"},
-            "base",
+            TFAmeJSONError("JSON error"),
             "invalid_response",
         ),
         (
-            "homeassistant.components.tfa_me.config_flow.TFAmeUniqueID",
-            {"side_effect": TFAmeException("unknown")},
-            {CONF_IP_ADDRESS: "192.168.0.10"},
-            "base",
+            TFAmeException("unknown"),
             "unknown",
         ),
         (
-            "homeassistant.components.tfa_me.config_flow.TFAmeUniqueID.get_identifier",
-            {"side_effect": Exception("connection error")},
-            {CONF_IP_ADDRESS: "192.168.1.10"},
-            "base",
+            Exception("unexpected error"),
             "unknown",
         ),
     ],
@@ -99,42 +71,41 @@ async def test_show_form(hass: HomeAssistant) -> None:
 )
 async def test_config_flow_errors_recover(
     hass: HomeAssistant,
-    patch_target: str | None,
-    patch_kwargs: PatchKwargs,
-    initial_user_input: UserInput,
-    error_key: str,
+    exception: Exception,
     expected_error: str,
 ) -> None:
     """Test config flow error handling and recovery."""
-    manager = patch(patch_target, **dict(patch_kwargs or {}))
-
-    with manager:
+    with patch(
+        "homeassistant.components.tfa_me.config_flow.TFAmeClient.async_get_sensors",
+        side_effect=exception,
+    ):
         result = await hass.config_entries.flow.async_init(
             DOMAIN,
             context={"source": config_entries.SOURCE_USER},
-            data=initial_user_input,
+            data={CONF_IP_ADDRESS: "192.168.0.10"},
         )
 
     assert result["type"] is data_entry_flow.FlowResultType.FORM
-    assert result["errors"] == {error_key: expected_error}
+    assert result["errors"] == {"base": expected_error}
 
     with (
         patch(
-            "homeassistant.components.tfa_me.config_flow.TFAmeUniqueID.get_identifier",
-            return_value="0101234567",
+            "homeassistant.components.tfa_me.config_flow.TFAmeClient.async_get_sensors",
+            return_value={"gateway_id": "0101234567"},
         ),
         patch(
             "homeassistant.components.tfa_me.async_setup_entry",
             return_value=True,
         ),
     ):
-        result2 = await hass.config_entries.flow.async_configure(
+        result = await hass.config_entries.flow.async_configure(
             result["flow_id"],
             user_input={CONF_IP_ADDRESS: "192.168.1.10"},
         )
 
-    assert result2["type"] is data_entry_flow.FlowResultType.CREATE_ENTRY
-    assert result2["title"] == "TFA.me Station '192.168.1.10'"
+    assert result["type"] is data_entry_flow.FlowResultType.CREATE_ENTRY
+    assert result["title"] == "TFA.me Station '192.168.1.10'"
+    assert result["data"] == {CONF_IP_ADDRESS: "192.168.1.10"}
 
 
 async def test_config_flow_duplicate_entry_aborts(
@@ -149,8 +120,8 @@ async def test_config_flow_duplicate_entry_aborts(
     existing_entry.add_to_hass(hass)
 
     with patch(
-        "homeassistant.components.tfa_me.config_flow.TFAmeUniqueID.get_identifier",
-        return_value="0101234567",
+        "homeassistant.components.tfa_me.config_flow.TFAmeClient.async_get_sensors",
+        return_value={"gateway_id": "0101234567"},
     ):
         result = await hass.config_entries.flow.async_init(
             DOMAIN,

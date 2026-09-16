@@ -73,7 +73,9 @@ async def test_update_data_with_ip(
 
     assert any(entity_id.endswith("_rssi") for entity_id in states)
     assert any(entity_id.endswith("_wind_speed") for entity_id in states)
-    assert any(entity_id.endswith("_rain") for entity_id in states)
+    assert any(
+        entity_id.endswith("_precipitation") for entity_id in states
+    )  # _precipitation, was _rain before translation kay changes
 
 
 @pytest.mark.parametrize(

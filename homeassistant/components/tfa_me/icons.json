@@ -18,10 +18,10 @@
       "lowbatt": {
         "default": "mdi:battery",
         "state": {
-          "0": "mdi:battery",
-          "1": "mdi:battery-alert",
-          "2": "mdi:battery-sync",
-          "3": "mdi:battery-off"
+          "critical": "mdi:battery-sync",
+          "low": "mdi:battery-alert",
+          "missing": "mdi:battery-off",
+          "ok": "mdi:battery"
         }
       },
       "rain": {
@@ -74,22 +74,22 @@
       "wind_direction": {
         "default": "mdi:compass-outline",
         "state": {
-          "0": "mdi:arrow-down",
-          "1": "mdi:arrow-down",
-          "2": "mdi:arrow-bottom-left",
-          "3": "mdi:arrow-bottom-left",
-          "4": "mdi:arrow-left",
-          "5": "mdi:arrow-left",
-          "6": "mdi:arrow-top-left",
-          "7": "mdi:arrow-top-left",
-          "8": "mdi:arrow-up",
-          "9": "mdi:arrow-up",
-          "10": "mdi:arrow-top-right",
-          "11": "mdi:arrow-top-right",
-          "12": "mdi:arrow-right",
-          "13": "mdi:arrow-right",
-          "14": "mdi:arrow-bottom-right",
-          "15": "mdi:arrow-bottom-right"
+          "e": "mdi:arrow-left",
+          "ene": "mdi:arrow-bottom-left",
+          "ese": "mdi:arrow-left",
+          "n": "mdi:arrow-down",
+          "ne": "mdi:arrow-bottom-left",
+          "nne": "mdi:arrow-down",
+          "nnw": "mdi:arrow-bottom-right",
+          "nw": "mdi:arrow-bottom-right",
+          "s": "mdi:arrow-up",
+          "se": "mdi:arrow-top-left",
+          "sse": "mdi:arrow-top-left",
+          "ssw": "mdi:arrow-up",
+          "sw": "mdi:arrow-top-right",
+          "w": "mdi:arrow-right",
+          "wnw": "mdi:arrow-right",
+          "wsw": "mdi:arrow-top-right"
         }
       },
       "wind_direction_deg": {

@@ -73,7 +73,7 @@ FAKE_JSON = {
             "ts": "1764169865",
             "measurements": {
                 "rssi": {"value": "227", "unit": "/255"},
-                "lowbatt": {"value": "1", "unit": "Yes"},
+                "lowbatt": {"value": "1", "unit": ""},
                 "temperature": {"value": "23.9", "unit": "°C"},
                 "humidity": {"value": "38", "unit": "%"},
             },
@@ -109,7 +109,7 @@ FAKE_JSON = {
             "ts": "1764169646",
             "measurements": {
                 "rssi": {"value": "255", "unit": "/255"},
-                "lowbatt": {"value": "1", "unit": "Yes"},
+                "lowbatt": {"value": "1", "unit": ""},
                 "temperature": {"value": "23.8", "unit": "°C"},
                 "humidity": {"value": "35", "unit": "%"},
                 "barometric_pressure": {"value": "1011.0", "unit": "hPa"},
