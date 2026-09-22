@@ -11,7 +11,7 @@ from homeassistant.components.sensor import (
     SensorStateClass,
     StateType,
 )
-from homeassistant.const import DEGREE
+from homeassistant.const import DEGREE, EntityCategory
 from homeassistant.core import HomeAssistant, callback
 from homeassistant.helpers.device_registry import DeviceInfo
 from homeassistant.helpers.entity_platform import AddConfigEntryEntitiesCallback
@@ -80,7 +80,7 @@ TFA_ME_ENTITY_DESCRIPTIONS: dict[str, TFAmeSensorEntityDescription] = {
     "rssi": TFAmeSensorEntityDescription(
         key="rssi",
         translation_key="rssi",
-        #    entity_category=EntityCategory.DIAGNOSTIC,
+        entity_category=EntityCategory.DIAGNOSTIC,
         state_class=SensorStateClass.MEASUREMENT,
         suggested_display_precision=0,
         value_fn=lambda entity, data: int(data["value"]),
@@ -91,7 +91,6 @@ TFA_ME_ENTITY_DESCRIPTIONS: dict[str, TFAmeSensorEntityDescription] = {
         key="lowbatt",
         translation_key="lowbatt",
         device_class=SensorDeviceClass.ENUM,
-        #    entity_category=EntityCategory.DIAGNOSTIC,
         options=list(TFAmeBatteryState),
         value_fn=lambda entity, data: battery_state(data["value"]),
     ),
@@ -119,7 +118,7 @@ TFA_ME_ENTITY_DESCRIPTIONS: dict[str, TFAmeSensorEntityDescription] = {
         device_class=SensorDeviceClass.WIND_SPEED,
         state_class=SensorStateClass.MEASUREMENT,
         suggested_display_precision=1,
-        value_fn=lambda entity, data: round(float(data["value"]), 1),
+        value_fn=lambda entity, data: float(data["value"]),
     ),
     "wind_gust": TFAmeSensorEntityDescription(
         key="wind_gust",
@@ -127,7 +126,7 @@ TFA_ME_ENTITY_DESCRIPTIONS: dict[str, TFAmeSensorEntityDescription] = {
         device_class=SensorDeviceClass.WIND_SPEED,
         state_class=SensorStateClass.MEASUREMENT,
         suggested_display_precision=1,
-        value_fn=lambda entity, data: round(float(data["value"]), 1),
+        value_fn=lambda entity, data: float(data["value"]),
     ),
     # Absolute rain gauge (since installation)
     "rain": TFAmeSensorEntityDescription(
