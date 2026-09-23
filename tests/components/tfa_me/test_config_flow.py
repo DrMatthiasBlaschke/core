@@ -145,3 +145,40 @@ async def test_config_flow_invalid_ip_host(
 
     assert result["type"] is data_entry_flow.FlowResultType.FORM
     assert result["errors"] == {CONF_IP_ADDRESS: "invalid_ip_host"}
+
+
+async def test_existing_entry_updates_host(
+    hass: HomeAssistant,
+    tfa_me_config_entry: MockConfigEntry,
+) -> None:
+    """Test an existing entry is updated with a newly validated host."""
+    identifier = "05B3E4E44"
+    new_host = "192.168.1.42"
+
+    hass.config_entries.async_update_entry(
+        tfa_me_config_entry,
+        unique_id=identifier,
+    )
+
+    old_host = tfa_me_config_entry.data[CONF_IP_ADDRESS]
+    assert old_host != new_host
+
+    with (
+        patch(
+            "homeassistant.components.tfa_me.config_flow.resolve_tfa_host",
+            return_value=new_host,
+        ),
+        patch(
+            "homeassistant.components.tfa_me.config_flow.TFAmeClient.async_get_sensors",
+            return_value={"gateway_id": identifier},
+        ),
+    ):
+        result = await hass.config_entries.flow.async_init(
+            DOMAIN,
+            context={"source": config_entries.SOURCE_USER},
+            data={CONF_IP_ADDRESS: new_host},
+        )
+
+    assert result["type"] is data_entry_flow.FlowResultType.ABORT
+    assert result["reason"] == "already_configured"
+    assert tfa_me_config_entry.data[CONF_IP_ADDRESS] == new_host

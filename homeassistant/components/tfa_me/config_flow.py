@@ -85,7 +85,9 @@ class TFAmeConfigFlow(ConfigFlow, domain=DOMAIN):
                             errors["base"] = "invalid_response"
                         else:
                             await self.async_set_unique_id(identifier)
-                            self._abort_if_unique_id_configured()
+                            self._abort_if_unique_id_configured(
+                                updates={CONF_IP_ADDRESS: host},
+                            )
 
                             title = f"{DEFAULT_STATION_NAME} '{address.upper()}'"
 

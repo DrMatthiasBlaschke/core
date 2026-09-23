@@ -212,8 +212,6 @@ class TFAmeSensorEntity(CoordinatorEntity[TFAmeUpdateCoordinator], SensorEntity)
 
         super().__init__(coordinator)
 
-        # Unique ID (sets unique_id), will never be changed
-        # Name schema for unique_id is: f"{StationID}_{SensorID}_{MeasurementName}".lower()
         self._attr_unique_id = unique_id
         self.uid: str = unique_id
         self.entity_description = description
@@ -287,8 +285,8 @@ class TFAmeSensorEntity(CoordinatorEntity[TFAmeUpdateCoordinator], SensorEntity)
         """Unit of measurement value,  e.g. for wind speed unit is "m/s"."""
 
         unit = self.coordinator.data.entities[self.uid]["unit"]
-        if unit is None:
-            return None  # HA shows "unavailable"
+        if not unit:
+            return None
         return str(unit)
 
     def get_timeout(self, sensor_id: str) -> int:
