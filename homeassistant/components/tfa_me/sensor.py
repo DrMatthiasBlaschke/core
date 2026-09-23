@@ -284,10 +284,9 @@ class TFAmeSensorEntity(CoordinatorEntity[TFAmeUpdateCoordinator], SensorEntity)
     def native_unit_of_measurement(self) -> str | None:
         """Unit of measurement value,  e.g. for wind speed unit is "m/s"."""
 
-        unit = self.coordinator.data.entities[self.uid]["unit"]
-        if not unit:
+        if (data := self.coordinator.data.entities.get(self.uid)) is None:
             return None
-        return str(unit)
+        return str(unit) if (unit := data["unit"]) else None
 
     def get_timeout(self, sensor_id: str) -> int:
         """Return the timeout time for a station or sensor."""
