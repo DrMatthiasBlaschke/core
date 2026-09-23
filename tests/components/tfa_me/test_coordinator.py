@@ -12,7 +12,7 @@ from tfa_me_ha_local.client import (
 )
 
 from homeassistant.components.tfa_me.coordinator import TFAmeUpdateCoordinator
-from homeassistant.config_entries import ConfigEntry
+from homeassistant.config_entries import ConfigEntry, ConfigEntryState
 from homeassistant.core import HomeAssistant
 from homeassistant.helpers.update_coordinator import UpdateFailed
 from homeassistant.util.dt import naive_now
@@ -73,9 +73,7 @@ async def test_update_data_with_ip(
 
     assert any(entity_id.endswith("_rssi") for entity_id in states)
     assert any(entity_id.endswith("_wind_speed") for entity_id in states)
-    assert any(
-        entity_id.endswith("_precipitation") for entity_id in states
-    )  # _precipitation, was _rain before translation kay changes
+    assert any(entity_id.endswith("_precipitation") for entity_id in states)
 
 
 @pytest.mark.parametrize(
@@ -107,3 +105,18 @@ async def test_async_update_data_exceptions(
         pytest.raises(UpdateFailed),
     ):
         await coordinator._async_update_data()
+
+
+async def test_first_refresh_failure(
+    hass: HomeAssistant,
+    tfa_me_config_entry: MockConfigEntry,
+) -> None:
+    """Test config entry setup retries when the first refresh fails."""
+    with patch(
+        "homeassistant.components.tfa_me.coordinator.TFAmeClient.async_get_sensors",
+        side_effect=TFAmeConnectionError("Connection failed"),
+    ):
+        await hass.config_entries.async_setup(tfa_me_config_entry.entry_id)
+        await hass.async_block_till_done()
+
+    assert tfa_me_config_entry.state is ConfigEntryState.SETUP_RETRY

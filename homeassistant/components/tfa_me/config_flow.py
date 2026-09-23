@@ -76,20 +76,23 @@ class TFAmeConfigFlow(ConfigFlow, domain=DOMAIN):
                     )
                     errors["base"] = "unknown"
                 else:
-                    identifier = json_data.get("gateway_id")
-
-                    if not isinstance(identifier, str) or not identifier:
+                    if not isinstance(json_data, dict):
                         errors["base"] = "invalid_response"
                     else:
-                        await self.async_set_unique_id(identifier)
-                        self._abort_if_unique_id_configured()
+                        identifier = json_data.get("gateway_id")
 
-                        title = f"{DEFAULT_STATION_NAME} '{address.upper()}'"
+                        if not isinstance(identifier, str) or not identifier:
+                            errors["base"] = "invalid_response"
+                        else:
+                            await self.async_set_unique_id(identifier)
+                            self._abort_if_unique_id_configured()
 
-                        return self.async_create_entry(
-                            title=title,
-                            data={CONF_IP_ADDRESS: host},
-                        )
+                            title = f"{DEFAULT_STATION_NAME} '{address.upper()}'"
+
+                            return self.async_create_entry(
+                                title=title,
+                                data={CONF_IP_ADDRESS: host},
+                            )
 
         return self.async_show_form(
             step_id="user",

@@ -131,7 +131,6 @@ TFA_ME_ENTITY_DESCRIPTIONS: dict[str, TFAmeSensorEntityDescription] = {
     # Absolute rain gauge (since installation)
     "rain": TFAmeSensorEntityDescription(
         key="rain",
-        # translation_key="rain",
         device_class=SensorDeviceClass.PRECIPITATION,
         state_class=SensorStateClass.TOTAL_INCREASING,
         suggested_display_precision=1,
@@ -263,21 +262,23 @@ class TFAmeSensorEntity(CoordinatorEntity[TFAmeUpdateCoordinator], SensorEntity)
     @property
     @override
     def native_value(self) -> StateType:
-        """Actual measurement value of an entity."""
+        """Return the measurement value."""
+        if (data := self.coordinator.data.entities.get(self.uid)) is None:
+            return None
 
-        last_update_ts: int = int(self.coordinator.data.entities[self.uid]["ts"])
+        last_update_ts = int(data["ts"])
         utc_now_ts = int(dt_util.utcnow().timestamp())
         timeout = self.get_timeout(self.sensor_id)
+
         if (utc_now_ts - last_update_ts) > timeout:
             return None
 
-        data = self.coordinator.data.entities[self.uid]
         desc: TFAmeSensorEntityDescription = self.entity_description
 
         if desc.value_fn is not None:
             return desc.value_fn(self, data)
 
-        # generic fallback
+        # Generic fallback
         return data.get("value")
 
     @property
@@ -298,3 +299,9 @@ class TFAmeSensorEntity(CoordinatorEntity[TFAmeUpdateCoordinator], SensorEntity)
         except KeyError:
             timeout_val = TIMEOUT_FOR_5_MIN
         return timeout_val
+
+    @property
+    @override
+    def available(self) -> bool:
+        """Return whether the entity is available."""
+        return super().available and self.uid in self.coordinator.data.entities
