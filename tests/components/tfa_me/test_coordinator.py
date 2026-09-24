@@ -77,19 +77,20 @@ async def test_update_data_with_ip(
 
 
 @pytest.mark.parametrize(
-    "exc",
+    ("exc", "translation_key"),
     [
-        TFAmeTimeoutError("timeout"),
-        TFAmeConnectionError("connection error"),
-        TFAmeHTTPError("http error"),
-        TFAmeJSONError("json error"),
-        TFAmeException("generic error"),
+        (TFAmeHTTPError("HTTP error"), "invalid_response_error"),
+        (TFAmeJSONError("JSON error"), "invalid_response_error"),
+        (TFAmeTimeoutError("Timeout"), "connection_error"),
+        (TFAmeConnectionError("Connection error"), "connection_error"),
+        (TFAmeException("Client error"), "connection_error"),
     ],
 )
 async def test_async_update_data_exceptions(
     hass: HomeAssistant,
     tfa_me_mock_entry: ConfigEntry,
     exc: TFAmeException,
+    translation_key: str,
 ) -> None:
     """Test that coordinator maps client exceptions to UpdateFailed."""
     coordinator = TFAmeUpdateCoordinator(
@@ -102,9 +103,11 @@ async def test_async_update_data_exceptions(
             "homeassistant.components.tfa_me.coordinator.TFAmeClient.async_get_sensors",
             side_effect=exc,
         ),
-        pytest.raises(UpdateFailed),
+        pytest.raises(UpdateFailed) as exc_info,
     ):
         await coordinator._async_update_data()
+
+    assert exc_info.value.translation_key == translation_key
 
 
 async def test_first_refresh_failure(
