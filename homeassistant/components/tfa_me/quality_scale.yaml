@@ -57,7 +57,7 @@ rules:
   discovery-update-info:
     status: exempt
     comment: |
-      This integration does not support automatic discovery, so there is no discovery information to update.
+      This integration does not support discovery.
   discovery:
     status: exempt
     comment: |

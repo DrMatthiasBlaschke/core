@@ -35,7 +35,6 @@ class TFAmeSensorEntityDescription(SensorEntityDescription):
 
 # All TFA.me entity descriptions
 TFA_ME_ENTITY_DESCRIPTIONS: dict[str, TFAmeSensorEntityDescription] = {
-    # Temperature
     "temperature": TFAmeSensorEntityDescription(
         key="temperature",
         device_class=SensorDeviceClass.TEMPERATURE,
