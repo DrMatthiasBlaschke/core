@@ -18,6 +18,8 @@ from homeassistant.components.tfa_me.const import DOMAIN
 from homeassistant.const import CONF_IP_ADDRESS
 from homeassistant.core import HomeAssistant
 
+from .conftest import FAKE_JSON
+
 from tests.common import MockConfigEntry
 
 
@@ -182,3 +184,21 @@ async def test_existing_entry_updates_host(
     assert result["type"] is data_entry_flow.FlowResultType.ABORT
     assert result["reason"] == "already_configured"
     assert tfa_me_config_entry.data[CONF_IP_ADDRESS] == new_host
+
+
+async def test_user_station_id(
+    hass: HomeAssistant,
+) -> None:
+    """Test setup using a station ID."""
+    with patch(
+        "homeassistant.components.tfa_me.config_flow.TFAmeClient.async_get_sensors",
+        return_value=FAKE_JSON,
+    ):
+        result = await hass.config_entries.flow.async_init(
+            DOMAIN,
+            context={"source": config_entries.SOURCE_USER},
+            data={CONF_IP_ADDRESS: "05B-3E4-E44"},
+        )
+
+    assert result["type"] is data_entry_flow.FlowResultType.CREATE_ENTRY
+    assert result["data"] == {CONF_IP_ADDRESS: "tfa-me-05b-3e4-e44.local"}

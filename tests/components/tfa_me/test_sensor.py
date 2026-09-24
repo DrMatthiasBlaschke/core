@@ -97,8 +97,7 @@ async def test_new_measurement_added_once(
     initial_payload = deepcopy(FAKE_JSON)
     updated_payload = deepcopy(FAKE_JSON)
 
-    sensor = updated_payload["sensors"][0]
-    sensor["measurements"]["temperature"] = {
+    updated_payload["sensors"][0]["measurements"]["temperature"] = {
         "value": "15.1",
         "unit": "°C",
     }
@@ -118,21 +117,34 @@ async def test_new_measurement_added_once(
         assert await hass.config_entries.async_setup(tfa_me_config_entry.entry_id)
         await hass.async_block_till_done()
 
+        entity_registry = er.async_get(hass)
+
+        before = {
+            entry.entity_id
+            for entry in entity_registry.entities.values()
+            if entry.config_entry_id == tfa_me_config_entry.entry_id
+        }
+
         coordinator = tfa_me_config_entry.runtime_data
 
         await coordinator.async_refresh()
         await hass.async_block_till_done()
 
+        after_first_refresh = {
+            entry.entity_id
+            for entry in entity_registry.entities.values()
+            if entry.config_entry_id == tfa_me_config_entry.entry_id
+        }
+
+        assert len(after_first_refresh - before) == 1
+
         await coordinator.async_refresh()
         await hass.async_block_till_done()
 
-    entity_registry = er.async_get(hass)
+        after_second_refresh = {
+            entry.entity_id
+            for entry in entity_registry.entities.values()
+            if entry.config_entry_id == tfa_me_config_entry.entry_id
+        }
 
-    temperature_entities = [
-        entry
-        for entry in entity_registry.entities.values()
-        if entry.config_entry_id == tfa_me_config_entry.entry_id
-        and entry.unique_id.endswith("_temperature")
-    ]
-
-    assert len(temperature_entities) == 1
+    assert after_second_refresh == after_first_refresh
