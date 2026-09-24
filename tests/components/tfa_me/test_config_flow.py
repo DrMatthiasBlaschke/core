@@ -93,7 +93,7 @@ async def test_config_flow_errors_recover(
     with (
         patch(
             "homeassistant.components.tfa_me.config_flow.TFAmeClient.async_get_sensors",
-            return_value={"gateway_id": "0101234567"},
+            return_value=FAKE_JSON,
         ),
         patch(
             "homeassistant.components.tfa_me.async_setup_entry",
@@ -106,7 +106,7 @@ async def test_config_flow_errors_recover(
         )
 
     assert result["type"] is data_entry_flow.FlowResultType.CREATE_ENTRY
-    assert result["title"] == "TFA.me Station '0101234567'"
+    assert result["title"] == "TFA.me Station '05B3E4E44'"
     assert result["data"] == {CONF_IP_ADDRESS: "192.168.1.10"}
 
 
@@ -117,13 +117,13 @@ async def test_config_flow_duplicate_entry_aborts(
     existing_entry = MockConfigEntry(
         domain=DOMAIN,
         data={CONF_IP_ADDRESS: "192.168.1.10"},
-        unique_id="0101234567",
+        unique_id="05b3e4e44",
     )
     existing_entry.add_to_hass(hass)
 
     with patch(
         "homeassistant.components.tfa_me.config_flow.TFAmeClient.async_get_sensors",
-        return_value={"gateway_id": "0101234567"},
+        return_value=FAKE_JSON,
     ):
         result = await hass.config_entries.flow.async_init(
             DOMAIN,
@@ -154,7 +154,7 @@ async def test_existing_entry_updates_host(
     tfa_me_config_entry: MockConfigEntry,
 ) -> None:
     """Test an existing entry is updated with a newly validated host."""
-    identifier = "05B3E4E44"
+    identifier = str(FAKE_JSON["gateway_id"]).lower()
     new_host = "192.168.1.42"
 
     hass.config_entries.async_update_entry(
@@ -172,7 +172,7 @@ async def test_existing_entry_updates_host(
         ),
         patch(
             "homeassistant.components.tfa_me.config_flow.TFAmeClient.async_get_sensors",
-            return_value={"gateway_id": identifier},
+            return_value=FAKE_JSON,
         ),
     ):
         result = await hass.config_entries.flow.async_init(

@@ -103,3 +103,7 @@ class TFAmeUpdateCoordinator(DataUpdateCoordinator[TFAmeCoordinatorData]):
     def get_device_description(self, serial: str) -> str:
         """Return the TFA.me device description for a serial number."""
         return self._client.get_device_description(serial)
+
+    def get_device_timeout(self, serial: str) -> int:
+        """Return the timeout time for a station or sensor."""
+        return self._client.get_device_timeout(serial)

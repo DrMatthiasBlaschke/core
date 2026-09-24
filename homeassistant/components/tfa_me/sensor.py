@@ -18,7 +18,7 @@ from homeassistant.helpers.entity_platform import AddConfigEntryEntitiesCallback
 from homeassistant.helpers.update_coordinator import CoordinatorEntity
 from homeassistant.util import dt as dt_util
 
-from .const import DOMAIN, TIMEOUT_FOR_5_MIN, TIMEOUT_MAPPING
+from .const import DOMAIN
 from .coordinator import TFAmeConfigEntry, TFAmeUpdateCoordinator
 from .helper import TFAmeBatteryState, TFAmeWindDirection, battery_state, wind_direction
 
@@ -263,7 +263,7 @@ class TFAmeSensorEntity(CoordinatorEntity[TFAmeUpdateCoordinator], SensorEntity)
 
         last_update_ts = int(data["ts"])
         utc_now_ts = int(dt_util.utcnow().timestamp())
-        timeout = self.get_timeout(self.sensor_id)
+        timeout = self.coordinator.get_device_timeout(self.sensor_id)
 
         if (utc_now_ts - last_update_ts) > timeout:
             return None
@@ -284,15 +284,6 @@ class TFAmeSensorEntity(CoordinatorEntity[TFAmeUpdateCoordinator], SensorEntity)
         if (data := self.coordinator.data.entities.get(self.uid)) is None:
             return None
         return str(unit) if (unit := data["unit"]) else None
-
-    def get_timeout(self, sensor_id: str) -> int:
-        """Return the timeout time for a station or sensor."""
-
-        try:
-            timeout_val = TIMEOUT_MAPPING[sensor_id[:2].upper()]
-        except KeyError:
-            timeout_val = TIMEOUT_FOR_5_MIN
-        return timeout_val
 
     @property
     @override

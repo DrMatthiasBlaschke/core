@@ -18,7 +18,7 @@ from homeassistant.config_entries import ConfigFlow, ConfigFlowResult
 from homeassistant.const import CONF_IP_ADDRESS
 from homeassistant.helpers.aiohttp_client import async_get_clientsession
 
-from .const import DEFAULT_STATION_NAME, DOMAIN
+from .const import DEFAULT_STATION_NAME, DOMAIN, VALID_JSON_MEASUREMENT_KEYS
 from .helper import resolve_tfa_host
 
 _LOGGER = logging.getLogger(__name__)
@@ -62,6 +62,10 @@ class TFAmeConfigFlow(ConfigFlow, domain=DOMAIN):
 
                 try:
                     json_data = await client.async_get_sensors()
+                    _, gateway_id, _ = client.parse_and_filter_json(
+                        json_data=json_data,
+                        valid_keys=VALID_JSON_MEASUREMENT_KEYS,
+                    )
                 except TFAmeTimeoutError:
                     errors["base"] = "timeout_connect"
                 except TFAmeConnectionError:
@@ -76,25 +80,17 @@ class TFAmeConfigFlow(ConfigFlow, domain=DOMAIN):
                     )
                     errors["base"] = "unknown"
                 else:
-                    if not isinstance(json_data, dict):
-                        errors["base"] = "invalid_response"
-                    else:
-                        identifier = json_data.get("gateway_id")
+                    await self.async_set_unique_id(gateway_id)
+                    self._abort_if_unique_id_configured(
+                        updates={CONF_IP_ADDRESS: host},
+                    )
 
-                        if not isinstance(identifier, str) or not identifier:
-                            errors["base"] = "invalid_response"
-                        else:
-                            await self.async_set_unique_id(identifier)
-                            self._abort_if_unique_id_configured(
-                                updates={CONF_IP_ADDRESS: host},
-                            )
+                    title = f"{DEFAULT_STATION_NAME} '{gateway_id.upper()}'"
 
-                            title = f"{DEFAULT_STATION_NAME} '{identifier.upper()}'"
-
-                            return self.async_create_entry(
-                                title=title,
-                                data={CONF_IP_ADDRESS: host},
-                            )
+                    return self.async_create_entry(
+                        title=title,
+                        data={CONF_IP_ADDRESS: host},
+                    )
 
         return self.async_show_form(
             step_id="user",
