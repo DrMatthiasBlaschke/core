@@ -29,11 +29,9 @@ PARALLEL_UPDATES = 0
 class TFAmeSensorEntityDescription(SensorEntityDescription):
     """Entity description for TFA.me sensor entity."""
 
-    # value_fn gets entity and the raw data dict (coordinator.data.entities[self.uid])
     value_fn: Callable[[TFAmeSensorEntity, dict[str, Any]], StateType] | None = None
 
 
-# All TFA.me entity descriptions
 TFA_ME_ENTITY_DESCRIPTIONS: dict[str, TFAmeSensorEntityDescription] = {
     "temperature": TFAmeSensorEntityDescription(
         key="temperature",

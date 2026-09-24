@@ -69,8 +69,6 @@ class TFAmeUpdateCoordinator(DataUpdateCoordinator[TFAmeCoordinatorData]):
             # Fetch all available sensors as JSON from TFA.me station/gateway
             json_data = await self._client.async_get_sensors()
 
-            # Convert JSON to values for TFAmeCoordinatorData for coordinator
-            # Also filter/remove values/entities that integration is unable to process
             filtered_list, gateway_id, gateway_sw = self._client.parse_and_filter_json(
                 json_data=json_data, valid_keys=VALID_JSON_MEASUREMENT_KEYS
             )

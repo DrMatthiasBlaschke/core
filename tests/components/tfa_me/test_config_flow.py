@@ -104,7 +104,7 @@ async def test_config_flow_errors_recover(
         )
 
     assert result["type"] is data_entry_flow.FlowResultType.CREATE_ENTRY
-    assert result["title"] == "TFA.me Station '192.168.1.10'"
+    assert result["title"] == "TFA.me Station '0101234567'"
     assert result["data"] == {CONF_IP_ADDRESS: "192.168.1.10"}
 
 

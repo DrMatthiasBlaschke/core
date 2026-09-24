@@ -1,5 +1,6 @@
 """Test the TFA.me integration: test of sensor.py."""
 
+from copy import deepcopy
 from unittest.mock import patch
 
 from freezegun.api import FrozenDateTimeFactory
@@ -83,3 +84,55 @@ async def test_stale_sensor_value_returns_unknown(
 
     assert temperature_state is not None
     assert temperature_state.state == "unknown"
+
+
+async def test_new_measurement_added_once(
+    hass: HomeAssistant,
+    freezer: FrozenDateTimeFactory,
+    tfa_me_config_entry: MockConfigEntry,
+) -> None:
+    """Test a newly discovered measurement is added only once."""
+    freezer.move_to("2025-11-26 09:16:00+00:00")
+
+    initial_payload = deepcopy(FAKE_JSON)
+    updated_payload = deepcopy(FAKE_JSON)
+
+    sensor = updated_payload["sensors"][0]
+    sensor["measurements"]["temperature"] = {
+        "value": "15.1",
+        "unit": "°C",
+    }
+
+    mock_get_sensors = AsyncMock(
+        side_effect=[
+            initial_payload,
+            updated_payload,
+            updated_payload,
+        ]
+    )
+
+    with patch(
+        "homeassistant.components.tfa_me.coordinator.TFAmeClient.async_get_sensors",
+        new=mock_get_sensors,
+    ):
+        assert await hass.config_entries.async_setup(tfa_me_config_entry.entry_id)
+        await hass.async_block_till_done()
+
+        coordinator = tfa_me_config_entry.runtime_data
+
+        await coordinator.async_refresh()
+        await hass.async_block_till_done()
+
+        await coordinator.async_refresh()
+        await hass.async_block_till_done()
+
+    entity_registry = er.async_get(hass)
+
+    temperature_entities = [
+        entry
+        for entry in entity_registry.entities.values()
+        if entry.config_entry_id == tfa_me_config_entry.entry_id
+        and entry.unique_id.endswith("_temperature")
+    ]
+
+    assert len(temperature_entities) == 1
