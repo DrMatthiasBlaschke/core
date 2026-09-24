@@ -5,7 +5,7 @@ DEFAULT_STATION_NAME = "TFA.me Station"
 LOCAL_POLL_INTERVAL = 60
 
 
-# Timeout time to mark sensor values "old"/unavailable
+# Timeout time to mark sensor values as unknown
 # Rule: Timeout time = 2 * (transmission interval in seconds) + 30
 # Availability timeouts are an integration policy (not part of TFA.me protocol).
 # These defaults may become user-configurable in a future options flow.

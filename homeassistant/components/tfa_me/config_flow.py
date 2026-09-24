@@ -89,7 +89,7 @@ class TFAmeConfigFlow(ConfigFlow, domain=DOMAIN):
                                 updates={CONF_IP_ADDRESS: host},
                             )
 
-                            title = f"{DEFAULT_STATION_NAME} '{address.upper()}'"
+                            title = f"{DEFAULT_STATION_NAME} '{identifier.upper()}'"
 
                             return self.async_create_entry(
                                 title=title,
