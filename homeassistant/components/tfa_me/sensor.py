@@ -86,8 +86,7 @@ TFA_ME_ENTITY_DESCRIPTIONS: dict[str, TFAmeSensorEntityDescription] = {
         suggested_display_precision=0,
         value_fn=lambda entity, data: int(data["value"]),
     ),
-    # Low battery warning states: 0 = OK, 1 = low (warning), 2 = critical low (urgent warning)
-    # 3 = battery missing/removed (Remark: some sensors have more than one power supply)
+    # Low battery warning states: 0...3
     # Icon depends on the measured value.
     "lowbatt": TFAmeSensorEntityDescription(
         key="lowbatt",
@@ -276,6 +275,9 @@ class TFAmeSensorEntity(CoordinatorEntity[TFAmeUpdateCoordinator], SensorEntity)
     @override
     def native_unit_of_measurement(self) -> str | None:
         """Unit of measurement value,  e.g. for wind speed unit is "m/s"."""
+
+        if self.entity_description.key == "rssi":
+            return None
 
         if (data := self.coordinator.data.entities.get(self.uid)) is None:
             return None

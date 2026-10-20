@@ -13,24 +13,25 @@ from tfa_me_ha_local.client import (
     TFAmeTimeoutError,
 )
 
-from homeassistant import config_entries, data_entry_flow
 from homeassistant.components.tfa_me.const import DOMAIN
+from homeassistant.config_entries import SOURCE_USER
 from homeassistant.const import CONF_IP_ADDRESS
 from homeassistant.core import HomeAssistant
+from homeassistant.data_entry_flow import FlowResultType
 
-from .conftest import FAKE_JSON
+from .conftest import STATION_DATA_JSON
 
-from tests.common import MockConfigEntry
+from tests.common import AsyncMock, MockConfigEntry
 
 
 async def test_show_form(hass: HomeAssistant) -> None:
     """Test that the flow starts with the user form."""
     result = await hass.config_entries.flow.async_init(
         DOMAIN,
-        context={"source": config_entries.SOURCE_USER},
+        context={"source": SOURCE_USER},
     )
 
-    assert result["type"] is data_entry_flow.FlowResultType.FORM
+    assert result["type"] is FlowResultType.FORM
     assert result["step_id"] == "user"
 
 
@@ -73,88 +74,105 @@ async def test_show_form(hass: HomeAssistant) -> None:
 )
 async def test_config_flow_errors_recover(
     hass: HomeAssistant,
+    mock_tfa_me_client: AsyncMock,
     exception: Exception,
     expected_error: str,
 ) -> None:
     """Test config flow error handling and recovery."""
-    with patch(
-        "homeassistant.components.tfa_me.config_flow.TFAmeClient.async_get_sensors",
-        side_effect=exception,
-    ):
-        result = await hass.config_entries.flow.async_init(
-            DOMAIN,
-            context={"source": config_entries.SOURCE_USER},
-            data={CONF_IP_ADDRESS: "192.168.0.10"},
-        )
+    result = await hass.config_entries.flow.async_init(
+        DOMAIN,
+        context={"source": SOURCE_USER},
+    )
 
-    assert result["type"] is data_entry_flow.FlowResultType.FORM
+    assert result["type"] is FlowResultType.FORM
+
+    mock_tfa_me_client.side_effect = exception
+
+    result = await hass.config_entries.flow.async_configure(
+        result["flow_id"],
+        user_input={CONF_IP_ADDRESS: "192.168.0.10"},
+    )
+
+    assert result["type"] is FlowResultType.FORM
     assert result["errors"] == {"base": expected_error}
 
-    with (
-        patch(
-            "homeassistant.components.tfa_me.config_flow.TFAmeClient.async_get_sensors",
-            return_value=FAKE_JSON,
-        ),
-        patch(
-            "homeassistant.components.tfa_me.async_setup_entry",
-            return_value=True,
-        ),
+    # Allow the next request to succeed.
+    mock_tfa_me_client.side_effect = None
+    mock_tfa_me_client.return_value = STATION_DATA_JSON
+
+    with patch(
+        "homeassistant.components.tfa_me.async_setup_entry",
+        return_value=True,
     ):
         result = await hass.config_entries.flow.async_configure(
             result["flow_id"],
             user_input={CONF_IP_ADDRESS: "192.168.1.10"},
         )
 
-    assert result["type"] is data_entry_flow.FlowResultType.CREATE_ENTRY
+    assert result["type"] is FlowResultType.CREATE_ENTRY
     assert result["title"] == "TFA.me Station '05B3E4E44'"
     assert result["data"] == {CONF_IP_ADDRESS: "192.168.1.10"}
 
 
 async def test_config_flow_duplicate_entry_aborts(
     hass: HomeAssistant,
+    tfa_me_config_entry: MockConfigEntry,
+    mock_tfa_me_client: AsyncMock,
 ) -> None:
     """Test config flow aborts if station is already configured."""
-    existing_entry = MockConfigEntry(
-        domain=DOMAIN,
-        data={CONF_IP_ADDRESS: "192.168.1.10"},
-        unique_id="05b3e4e44",
+    result = await hass.config_entries.flow.async_init(
+        DOMAIN,
+        context={"source": SOURCE_USER},
     )
-    existing_entry.add_to_hass(hass)
 
-    with patch(
-        "homeassistant.components.tfa_me.config_flow.TFAmeClient.async_get_sensors",
-        return_value=FAKE_JSON,
-    ):
-        result = await hass.config_entries.flow.async_init(
-            DOMAIN,
-            context={"source": config_entries.SOURCE_USER},
-            data={CONF_IP_ADDRESS: "192.168.1.10"},
-        )
+    assert result["type"] is FlowResultType.FORM
 
-    assert result["type"] is data_entry_flow.FlowResultType.ABORT
+    result = await hass.config_entries.flow.async_configure(
+        result["flow_id"],
+        user_input={CONF_IP_ADDRESS: "192.168.1.10"},
+    )
+
+    assert result["type"] is FlowResultType.ABORT
     assert result["reason"] == "already_configured"
 
 
 async def test_config_flow_invalid_ip_host(
     hass: HomeAssistant,
+    mock_tfa_me_client: AsyncMock,
 ) -> None:
-    """Test config flow rejects invalid host."""
+    """Test config flow recovers from an invalid host."""
     result = await hass.config_entries.flow.async_init(
         DOMAIN,
-        context={"source": config_entries.SOURCE_USER},
-        data={CONF_IP_ADDRESS: "NotIP"},
+        context={"source": SOURCE_USER},
     )
 
-    assert result["type"] is data_entry_flow.FlowResultType.FORM
+    assert result["type"] is FlowResultType.FORM
+
+    result = await hass.config_entries.flow.async_configure(
+        result["flow_id"],
+        user_input={CONF_IP_ADDRESS: "NotIP"},
+    )
+
+    assert result["type"] is FlowResultType.FORM
     assert result["errors"] == {CONF_IP_ADDRESS: "invalid_ip_host"}
+
+    # Retry with a valid IP address.
+    result = await hass.config_entries.flow.async_configure(
+        result["flow_id"],
+        user_input={CONF_IP_ADDRESS: "192.168.1.10"},
+    )
+
+    assert result["type"] is FlowResultType.CREATE_ENTRY
+    assert result["data"] == {CONF_IP_ADDRESS: "192.168.1.10"}
 
 
 async def test_existing_entry_updates_host(
     hass: HomeAssistant,
     tfa_me_config_entry: MockConfigEntry,
+    mock_tfa_me_client: AsyncMock,
 ) -> None:
     """Test an existing entry is updated with a newly validated host."""
-    identifier = str(FAKE_JSON["gateway_id"]).lower()
+    identifier = str(STATION_DATA_JSON["gateway_id"]).lower()
     new_host = "192.168.1.42"
 
     hass.config_entries.async_update_entry(
@@ -165,40 +183,37 @@ async def test_existing_entry_updates_host(
     old_host = tfa_me_config_entry.data[CONF_IP_ADDRESS]
     assert old_host != new_host
 
-    with (
-        patch(
-            "homeassistant.components.tfa_me.config_flow.resolve_tfa_host",
-            return_value=new_host,
-        ),
-        patch(
-            "homeassistant.components.tfa_me.config_flow.TFAmeClient.async_get_sensors",
-            return_value=FAKE_JSON,
-        ),
+    with patch(
+        "homeassistant.components.tfa_me.config_flow.resolve_tfa_host",
+        return_value=new_host,
     ):
         result = await hass.config_entries.flow.async_init(
             DOMAIN,
-            context={"source": config_entries.SOURCE_USER},
+            context={"source": SOURCE_USER},
             data={CONF_IP_ADDRESS: new_host},
         )
 
-    assert result["type"] is data_entry_flow.FlowResultType.ABORT
+    assert result["type"] is FlowResultType.ABORT
     assert result["reason"] == "already_configured"
     assert tfa_me_config_entry.data[CONF_IP_ADDRESS] == new_host
 
 
 async def test_user_station_id(
     hass: HomeAssistant,
+    mock_tfa_me_client: AsyncMock,
 ) -> None:
     """Test setup using a station ID."""
-    with patch(
-        "homeassistant.components.tfa_me.config_flow.TFAmeClient.async_get_sensors",
-        return_value=FAKE_JSON,
-    ):
-        result = await hass.config_entries.flow.async_init(
-            DOMAIN,
-            context={"source": config_entries.SOURCE_USER},
-            data={CONF_IP_ADDRESS: "05B-3E4-E44"},
-        )
+    result = await hass.config_entries.flow.async_init(
+        DOMAIN,
+        context={"source": SOURCE_USER},
+    )
 
-    assert result["type"] is data_entry_flow.FlowResultType.CREATE_ENTRY
+    assert result["type"] is FlowResultType.FORM
+
+    result = await hass.config_entries.flow.async_configure(
+        result["flow_id"],
+        user_input={CONF_IP_ADDRESS: "05B-3E4-E44"},
+    )
+
+    assert result["type"] is FlowResultType.CREATE_ENTRY
     assert result["data"] == {CONF_IP_ADDRESS: "tfa-me-05b-3e4-e44.local"}

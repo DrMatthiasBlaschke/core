@@ -276,7 +276,7 @@
     'supported_features': 0,
     'translation_key': 'rssi',
     'unique_id': '05b3e4e44_05b3e4e44_rssi',
-    'unit_of_measurement': '/255',
+    'unit_of_measurement': None,
   })
 # ---
 # name: test_tfa_me_sensor_entities_snapshot[sensor.tfa_me_05b_3e4_e44_05b3e4e44_rssi-state]
@@ -284,7 +284,6 @@
     'attributes': ReadOnlyDict({
       <EntityStateAttribute.FRIENDLY_NAME: 'friendly_name'>: 'TFA.me 05B-3E4-E44 (05B3E4E44) RSSI',
       <SensorEntityCapabilityAttribute.STATE_CLASS: 'state_class'>: <SensorStateClass.MEASUREMENT: 'measurement'>,
-      <EntityStateAttribute.UNIT_OF_MEASUREMENT: 'unit_of_measurement'>: '/255',
     }),
     'context': <ANY>,
     'entity_id': 'sensor.tfa_me_05b_3e4_e44_05b3e4e44_rssi',
@@ -513,7 +512,7 @@
     'supported_features': 0,
     'translation_key': 'rssi',
     'unique_id': '05b3e4e44_a1fffffea_rssi',
-    'unit_of_measurement': '/255',
+    'unit_of_measurement': None,
   })
 # ---
 # name: test_tfa_me_sensor_entities_snapshot[sensor.tfa_me_a1f_fff_fea_05b3e4e44_rssi-state]
@@ -521,7 +520,6 @@
     'attributes': ReadOnlyDict({
       <EntityStateAttribute.FRIENDLY_NAME: 'friendly_name'>: 'TFA.me A1F-FFF-FEA (05B3E4E44) RSSI',
       <SensorEntityCapabilityAttribute.STATE_CLASS: 'state_class'>: <SensorStateClass.MEASUREMENT: 'measurement'>,
-      <EntityStateAttribute.UNIT_OF_MEASUREMENT: 'unit_of_measurement'>: '/255',
     }),
     'context': <ANY>,
     'entity_id': 'sensor.tfa_me_a1f_fff_fea_05b3e4e44_rssi',
@@ -634,7 +632,7 @@
     'supported_features': 0,
     'translation_key': 'rssi',
     'unique_id': '05b3e4e44_a204e4df6_rssi',
-    'unit_of_measurement': '/255',
+    'unit_of_measurement': None,
   })
 # ---
 # name: test_tfa_me_sensor_entities_snapshot[sensor.tfa_me_a20_4e4_df6_05b3e4e44_rssi-state]
@@ -642,7 +640,6 @@
     'attributes': ReadOnlyDict({
       <EntityStateAttribute.FRIENDLY_NAME: 'friendly_name'>: 'TFA.me A20-4E4-DF6 (05B3E4E44) RSSI',
       <SensorEntityCapabilityAttribute.STATE_CLASS: 'state_class'>: <SensorStateClass.MEASUREMENT: 'measurement'>,
-      <EntityStateAttribute.UNIT_OF_MEASUREMENT: 'unit_of_measurement'>: '/255',
     }),
     'context': <ANY>,
     'entity_id': 'sensor.tfa_me_a20_4e4_df6_05b3e4e44_rssi',
@@ -1023,7 +1020,7 @@
     'supported_features': 0,
     'translation_key': 'rssi',
     'unique_id': '05b3e4e44_a2ffffffb_rssi',
-    'unit_of_measurement': '/255',
+    'unit_of_measurement': None,
   })
 # ---
 # name: test_tfa_me_sensor_entities_snapshot[sensor.tfa_me_a2f_fff_ffb_05b3e4e44_rssi-state]
@@ -1031,7 +1028,6 @@
     'attributes': ReadOnlyDict({
       <EntityStateAttribute.FRIENDLY_NAME: 'friendly_name'>: 'TFA.me A2F-FFF-FFB (05B3E4E44) RSSI',
       <SensorEntityCapabilityAttribute.STATE_CLASS: 'state_class'>: <SensorStateClass.MEASUREMENT: 'measurement'>,
-      <EntityStateAttribute.UNIT_OF_MEASUREMENT: 'unit_of_measurement'>: '/255',
     }),
     'context': <ANY>,
     'entity_id': 'sensor.tfa_me_a2f_fff_ffb_05b3e4e44_rssi',
@@ -1412,7 +1408,7 @@
     'supported_features': 0,
     'translation_key': 'rssi',
     'unique_id': '05b3e4e44_a364f3d67_rssi',
-    'unit_of_measurement': '/255',
+    'unit_of_measurement': None,
   })
 # ---
 # name: test_tfa_me_sensor_entities_snapshot[sensor.tfa_me_a36_4f3_d67_05b3e4e44_rssi-state]
@@ -1420,7 +1416,6 @@
     'attributes': ReadOnlyDict({
       <EntityStateAttribute.FRIENDLY_NAME: 'friendly_name'>: 'TFA.me A36-4F3-D67 (05B3E4E44) RSSI',
       <SensorEntityCapabilityAttribute.STATE_CLASS: 'state_class'>: <SensorStateClass.MEASUREMENT: 'measurement'>,
-      <EntityStateAttribute.UNIT_OF_MEASUREMENT: 'unit_of_measurement'>: '/255',
     }),
     'context': <ANY>,
     'entity_id': 'sensor.tfa_me_a36_4f3_d67_05b3e4e44_rssi',
@@ -1649,7 +1644,7 @@
     'supported_features': 0,
     'translation_key': 'rssi',
     'unique_id': '05b3e4e44_a4481290f_rssi',
-    'unit_of_measurement': '/255',
+    'unit_of_measurement': None,
   })
 # ---
 # name: test_tfa_me_sensor_entities_snapshot[sensor.tfa_me_a44_812_90f_05b3e4e44_rssi-state]
@@ -1657,7 +1652,6 @@
     'attributes': ReadOnlyDict({
       <EntityStateAttribute.FRIENDLY_NAME: 'friendly_name'>: 'TFA.me A44-812-90F (05B3E4E44) RSSI',
       <SensorEntityCapabilityAttribute.STATE_CLASS: 'state_class'>: <SensorStateClass.MEASUREMENT: 'measurement'>,
-      <EntityStateAttribute.UNIT_OF_MEASUREMENT: 'unit_of_measurement'>: '/255',
     }),
     'context': <ANY>,
     'entity_id': 'sensor.tfa_me_a44_812_90f_05b3e4e44_rssi',
@@ -1944,7 +1938,7 @@
     'supported_features': 0,
     'translation_key': 'rssi',
     'unique_id': '05b3e4e44_a6f169ad1_rssi',
-    'unit_of_measurement': '/255',
+    'unit_of_measurement': None,
   })
 # ---
 # name: test_tfa_me_sensor_entities_snapshot[sensor.tfa_me_a6f_169_ad1_05b3e4e44_rssi-state]
@@ -1952,7 +1946,6 @@
     'attributes': ReadOnlyDict({
       <EntityStateAttribute.FRIENDLY_NAME: 'friendly_name'>: 'TFA.me A6F-169-AD1 (05B3E4E44) RSSI',
       <SensorEntityCapabilityAttribute.STATE_CLASS: 'state_class'>: <SensorStateClass.MEASUREMENT: 'measurement'>,
-      <EntityStateAttribute.UNIT_OF_MEASUREMENT: 'unit_of_measurement'>: '/255',
     }),
     'context': <ANY>,
     'entity_id': 'sensor.tfa_me_a6f_169_ad1_05b3e4e44_rssi',
@@ -2181,7 +2174,7 @@
     'supported_features': 0,
     'translation_key': 'rssi',
     'unique_id': '05b3e4e44_bb1234567_rssi',
-    'unit_of_measurement': '/255',
+    'unit_of_measurement': None,
   })
 # ---
 # name: test_tfa_me_sensor_entities_snapshot[sensor.tfa_me_bb1_234_567_05b3e4e44_rssi-state]
@@ -2189,7 +2182,6 @@
     'attributes': ReadOnlyDict({
       <EntityStateAttribute.FRIENDLY_NAME: 'friendly_name'>: 'TFA.me BB1-234-567 (05B3E4E44) RSSI',
       <SensorEntityCapabilityAttribute.STATE_CLASS: 'state_class'>: <SensorStateClass.MEASUREMENT: 'measurement'>,
-      <EntityStateAttribute.UNIT_OF_MEASUREMENT: 'unit_of_measurement'>: '/255',
     }),
     'context': <ANY>,
     'entity_id': 'sensor.tfa_me_bb1_234_567_05b3e4e44_rssi',
